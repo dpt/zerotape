@@ -1,5 +1,7 @@
 # zerotape
 
+*WIP*
+
 zerotape is a small C library for capturing data structures to a text file format, then restoring them later. You take the C data structure you want to preserve and write out a description of the structure’s fields. Zerotape then gives you functions to save and load the structure to and from its standard file format.
 
 - zerotape’s file format is a small language: it has basic expressions
