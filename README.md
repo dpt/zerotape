@@ -2,13 +2,13 @@
 
 *WIP*
 
-zerotape is a small C library for capturing data structures to a text file format, then restoring them later. You take the C data structure you want to preserve and write out a description of the structure’s fields. Zerotape then gives you functions to save and load the structure to and from its standard file format.
+zerotape is a small C library for capturing hierarchical data structures to a text file format, then restoring them later. You take the C data structures you want to preserve and write out a description of the structures. zerotape then gives you functions to save and load the structure to and from its standard file format.
 
-- zerotape’s file format is a small language: it has basic expressions
+- zerotape’s file format is a small language: it allows basic expressions
 - It's integer oriented at the moment (no support for strings or floating point types, yet)
-- It's assignment focused (although it's a language it has no variables yet, or references to symbols, etc.)
+- It's assignment focused (although it's a small language it has no variables yet, or references to symbols, etc.)
 
-zerotape uses the [lemon parser generator](https://sqlite.org/src/doc/trunk/doc/lemon.html) and was built to handle the saving and loading of games into my [The Great Escape in C project](https://github.com/dpt/The-Great-Escape-in-C).
+zerotape uses the [lemon parser generator](https://sqlite.org/src/doc/trunk/doc/lemon.html). It was built to handle the saving and loading of games into my [The Great Escape in C](https://github.com/dpt/The-Great-Escape-in-C) project.
 
 ## File Format
 
@@ -23,6 +23,7 @@ sparsearray = [ 0: 42, 10: 43 ];  // assign numbered elements within an array
 outerfield = { innerfield = 42; }  // nesting/scoped fields
 
 // Values can be decimal, $hex or 0xhex
+field = 1.23;
 field = $deadbeef;
 field = 0xcafebabe;
 
