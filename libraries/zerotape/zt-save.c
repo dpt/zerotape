@@ -1,0 +1,387 @@
+/* zt-save.c */
+
+#include <assert.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "zerotape/zerotape.h"
+
+#include "zt-walk.h"
+
+/* ----------------------------------------------------------------------- */
+
+/* printf formatting token for outputting integers. */
+#ifdef ZT_USE_HEX
+#define FMT "$%X" // hex
+#else
+#define FMT "%u"
+#endif
+
+/* ----------------------------------------------------------------------- */
+
+typedef struct savestack_entry
+{
+  enum { Struct, Array } container;
+  int nelems;
+  int index;
+}
+savestack_entry_t;
+
+typedef struct save_stack
+{
+  savestack_entry_t *sp;        /* stack pointer. points at next empty entry */
+  savestack_entry_t *stack;     /* stack of entries */
+  int                allocated; /* number of entries allocated */
+}
+save_stack_t;
+
+static int savestack_depth(const save_stack_t *stack)
+{
+  return (int)(stack->sp - stack->stack);
+}
+
+static int savestack_empty(const save_stack_t *stack)
+{
+  return savestack_depth(stack) == 0;
+}
+
+static savestack_entry_t *savestack_top(const save_stack_t *stack)
+{
+  if (savestack_empty(stack))
+    return NULL;
+
+  return stack->sp - 1;
+}
+
+static ztresult_t savestack_push(save_stack_t      *stack,
+                           const savestack_entry_t *entry)
+{
+  const int InitialStackSize      = 4; /* initial size in entries */
+  const int StackGrowthMultiplier = 2; /* doubling strategy */
+
+  if (stack->sp == stack->stack + stack->allocated)
+  {
+    int                newallocated;
+    savestack_entry_t *newstack;
+
+    newallocated = stack->allocated * StackGrowthMultiplier;
+    if (newallocated < InitialStackSize)
+      newallocated = InitialStackSize;
+
+    newstack = realloc(stack->stack, newallocated * sizeof(*newstack));
+    if (newstack == NULL)
+      return ztresult_OOM;
+
+    stack->sp        = newstack + (stack->sp - stack->stack); /* adjust sp */
+    stack->stack     = newstack;
+    stack->allocated = newallocated;
+  }
+
+  *stack->sp++ = *entry;
+
+  return ztresult_OK;
+}
+
+/* this is "pop and discard" really */
+static void savestack_pop(save_stack_t *stack)
+{
+  if (savestack_empty(stack))
+    return;
+
+  stack->sp--;
+}
+
+static void savestack_setup(save_stack_t *stack)
+{
+  stack->sp        = NULL;
+  stack->stack     = NULL;
+  stack->allocated = 0;
+}
+
+static void savestack_destroy(save_stack_t *stack)
+{
+  if (stack == NULL)
+    return;
+
+  free(stack->stack);
+}
+
+/* ----------------------------------------------------------------------- */
+
+typedef struct savestate
+{
+  FILE        *f;
+  int          indent_is_due;
+  int          depth;
+  save_stack_t stack;
+}
+savestate_t;
+
+static void indent(savestate_t *state)
+{
+  state->depth++;
+}
+
+static void outdent(savestate_t *state)
+{
+  state->depth--;
+}
+
+static void emitf(savestate_t *state, const char *fmt, ...)
+{
+  va_list ap;
+  size_t  fmtlen;
+
+  if (state->indent_is_due)
+  {
+    int depth;
+    int i;
+
+    depth = state->depth;
+    for (i = 0; i < depth; i++)
+    {
+      printf("  ");
+      fprintf(state->f, "  ");
+    }
+  }
+
+  va_start(ap, fmt);
+  vprintf(fmt, ap);
+  va_end(ap);
+
+  va_start(ap, fmt);
+  vfprintf(state->f, fmt, ap);
+  va_end(ap);
+
+  fmtlen = strlen(fmt);
+  state->indent_is_due = (fmt[fmtlen - 1] == '\n'); /* weak newline detection */
+}
+
+/* ----------------------------------------------------------------------- */
+
+#define DUMP(TYPE)                                                     \
+  do {                                                                 \
+    if (nelems == 1) { /* singletons are rendered as: x = $0; */       \
+      emitf(state, "%s = " FMT ";\n", name, *pvalue);                  \
+    } else { /* arrays are rendered as: x = [ $0, $1, $2, ...]; */     \
+      int j,k;                                                         \
+      emitf(state, "%s = [\n", name);                                  \
+      indent(state);                                                   \
+      for (j = 0; j < nelems; j += stride) {                           \
+        for (k = j; k < j + stride; k++)                               \
+          emitf(state, (k <  nelems - 1) ? FMT ", " : FMT, *pvalue++); \
+        emitf(state, "\n");                                            \
+      }                                                                \
+      outdent(state);                                                  \
+      emitf(state, "];\n");                                            \
+    }                                                                  \
+  } while (0)
+
+/* ----------------------------------------------------------------------- */
+
+static ztresult_t handler_uchar(const char      *name,
+                                const ztuchar_t *pvalue,
+                                size_t           nelems,
+                                size_t           stride,
+                                void            *opaque)
+{
+  savestate_t *state = opaque;
+  DUMP(byte_t);
+  return ztresult_OK;
+}
+
+static ztresult_t handler_ushort(const char       *name,
+                                 const ztushort_t *pvalue,
+                                 size_t            nelems,
+                                 size_t            stride,
+                                 void             *opaque)
+{
+  savestate_t *state = opaque;
+  DUMP(half_t);
+  return ztresult_OK;
+}
+
+static ztresult_t handler_uint(const char     *name,
+                               const ztuint_t *pvalue,
+                               size_t          nelems,
+                               size_t          stride,
+                               void           *opaque)
+{
+  savestate_t *state = opaque;
+  DUMP(word_t);
+  return ztresult_OK;
+}
+
+static ztresult_t handler_index(const char *name,
+                                ztindex_t   index,
+                                void       *opaque)
+{
+  savestate_t *state = opaque;
+  emitf(state, "%s = %d;\n", name, index);
+  return ztresult_OK;
+}
+
+static ztresult_t handler_version(const char *name,
+                                  ztversion_t version,
+                                  void       *opaque)
+{
+  savestate_t *state = opaque;
+  emitf(state, "%s = %.2f;\n", name, (double) version / 100.0);
+  return ztresult_OK;
+}
+
+static ztresult_t handler_startstruct(const char *name, void *opaque)
+{
+  ztresult_t         rc;
+  savestate_t       *state   = opaque;
+  savestack_entry_t *scope   = NULL;
+  int                isarray = 0;
+  savestack_entry_t  entry;
+
+  if (!savestack_empty(&state->stack))
+  {
+    scope   = savestack_top(&state->stack);
+    isarray = (scope->container == Array);
+  }
+
+  entry.container = Struct;
+  entry.nelems    = -1;
+  entry.index     = 0;
+  rc = savestack_push(&state->stack, &entry);
+  if (rc)
+    return rc;
+
+  if (isarray)
+    emitf(state, "%d: {\n", scope->index++);
+  else
+    emitf(state, "%s = {\n", name);
+
+  indent(state);
+
+  return ztresult_OK;
+}
+
+static ztresult_t handler_endstruct(void *opaque)
+{
+  savestate_t       *state   = opaque;
+  savestack_entry_t *scope   = NULL;
+  int                isarray = 0;
+  const char        *end;
+
+  savestack_pop(&state->stack);
+
+  if (!savestack_empty(&state->stack))
+  {
+    scope   = savestack_top(&state->stack);
+    isarray = (scope->container == Array);
+  }
+
+  outdent(state);
+
+  if (isarray)
+  {
+    if (scope->index < scope->nelems)
+      end = "},\n";
+    else
+      end = "}\n";
+  }
+  else
+  {
+    end = "};\n";
+  }
+  emitf(state, end);
+
+  return ztresult_OK;
+}
+
+static ztresult_t handler_startarray(const char *name, int nelems, void *opaque)
+{
+  ztresult_t        rc;
+  savestate_t      *state = opaque;
+  savestack_entry_t entry;
+
+  entry.container = Array;
+  entry.nelems    = nelems;
+  entry.index     = 0;
+  rc = savestack_push(&state->stack, &entry);
+  if (rc)
+    return rc;
+
+  emitf(state, "%s = [\n", name);
+  indent(state);
+
+  return ztresult_OK;
+}
+
+static ztresult_t handler_endarray(void *opaque)
+{
+  savestate_t *state = opaque;
+
+  outdent(state);
+  emitf(state, "];\n");
+
+  savestack_pop(&state->stack);
+
+  return ztresult_OK;
+}
+
+/* ----------------------------------------------------------------------- */
+
+ztresult_t zt_save(const ztstruct_t *metastruct,
+                   const void       *structure,
+                   const char       *filename,
+                   const ztregion_t *regions,
+                   int               nregions)
+{
+  static const ztwalkhandlers_t handlers =
+  {
+    handler_uchar,
+    handler_ushort,
+    handler_uint,
+    handler_index,
+    handler_version,
+    handler_startstruct,
+    handler_endstruct,
+    handler_startarray,
+    handler_endarray
+  };
+
+  ztresult_t  rc;
+  savestate_t state;
+
+  assert(metastruct);
+  assert(structure);
+  assert(filename);
+  /* regions may be NULL */
+  assert(nregions >= 0);
+
+  state.f = fopen(filename, "wb");
+  if (state.f == NULL)
+    return ztresult_BAD_FOPEN;
+  
+  state.indent_is_due = 0;
+  state.depth = 0;
+  savestack_setup(&state.stack);
+
+  rc = zt_walk(metastruct, structure, regions, nregions, &handlers, &state);
+  if (rc)
+    goto err;
+
+  savestack_destroy(&state.stack);
+  fclose(state.f);
+
+  return ztresult_OK;
+
+
+err:
+  savestack_destroy(&state.stack);
+  fclose(state.f);
+
+  return rc;
+}
+
+/* ----------------------------------------------------------------------- */
+
+/* vim: ts=8 sts=2 sw=2 et */
