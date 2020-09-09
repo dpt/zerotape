@@ -77,8 +77,8 @@ clean:
 	-rm -f $(lemonobjs) $(lemondeps) lemon
 	-rm -f $(ztdir)/zt-gram.[ch]
 	-rm -f $(ztobjs) $(ztdeps) libzerotape.a
-	-rm -f $(testobjs) $(testdeps) $(zttest)
-	-rm -f $(demoobjs) $(demodeps) $(ztdemo)
+	-rm -f $(testobjs) $(testdeps) zttest
+	-rm -f $(demoobjs) $(demodeps) ztdemo
 	@echo Cleaned
 
 # Dependencies
