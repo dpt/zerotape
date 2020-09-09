@@ -2,7 +2,7 @@
 
 #include <stdio.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "../../libraries/zerotape/zt-ast.h"
 #include "../../libraries/zerotape/zt-parser.h"

@@ -57,3 +57,5 @@ libraries/zerotape/zt-gram.c
 libraries/zerotape/zt-gram.h
 ztdemo
 zttest
+/lemon
+/build

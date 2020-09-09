@@ -5,7 +5,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "zt-gram.h"
 

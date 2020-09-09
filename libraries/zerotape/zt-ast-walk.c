@@ -4,7 +4,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "zt-ast.h"
 
