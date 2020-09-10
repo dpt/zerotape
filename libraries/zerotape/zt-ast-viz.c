@@ -198,4 +198,4 @@ ztresult_t ztast_show(ztast_t *ast, const char *filename)
 
 /* ----------------------------------------------------------------------- */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

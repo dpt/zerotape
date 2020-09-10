@@ -290,4 +290,4 @@ ztresult_t zt_save(const ztstruct_t *meta,
 
 #endif /* ZEROTAPE_H */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

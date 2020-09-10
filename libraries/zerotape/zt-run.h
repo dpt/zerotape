@@ -26,4 +26,4 @@ ztresult_t zt_run_program(const ztast_t    *ast,
 
 #endif /* ZT_RUN_H */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

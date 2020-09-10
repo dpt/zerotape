@@ -290,4 +290,4 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
 /* ----------------------------------------------------------------------- */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

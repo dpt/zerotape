@@ -12,3 +12,5 @@ int ztlex_selftest(void);
 int ztlex_dump_filename_to_tokens(const char *filename);
 
 #endif /* ZT_LEX_TEST_H */
+
+/* vim: set ts=8 sts=2 sw=2 et: */

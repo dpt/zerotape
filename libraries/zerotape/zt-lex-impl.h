@@ -37,4 +37,4 @@ struct ztlex
 
 #endif /* ZT_LEX_IMPL_H */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

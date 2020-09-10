@@ -177,4 +177,4 @@ ztresult_t ztast_walk(ztast_t *ast, void *opaque)
 
 /* ----------------------------------------------------------------------- */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

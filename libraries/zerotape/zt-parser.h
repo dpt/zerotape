@@ -26,4 +26,4 @@ ztast_t *ztparser_from_file(const char *filename);
 
 #endif /* ZT_PARSER_H */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

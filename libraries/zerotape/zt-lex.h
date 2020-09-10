@@ -57,4 +57,4 @@ ixlexfn_t ztlex_isname;
 
 #endif /* ZT_LEX_H */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

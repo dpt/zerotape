@@ -29,3 +29,5 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                    void                   *opaque);
 
 #endif /* ZT_WALK_H */
+
+/* vim: set ts=8 sts=2 sw=2 et: */

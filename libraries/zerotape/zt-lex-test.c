@@ -226,4 +226,4 @@ int ztlex_dump_filename_to_tokens(const char *filename)
 
 /* ----------------------------------------------------------------------- */
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */

@@ -41,4 +41,4 @@ ztresult_t zt_load(const ztstruct_t *meta,
   return rc;
 }
 
-/* vim: ts=8 sts=2 sw=2 et */
+/* vim: set ts=8 sts=2 sw=2 et: */
