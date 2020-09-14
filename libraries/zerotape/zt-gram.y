@@ -34,7 +34,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "zt-ast.h"
 #include "zt-parser.h"

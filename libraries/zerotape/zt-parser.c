@@ -7,7 +7,7 @@
 #include <string.h>
 #include <stdarg.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "zt-lex.h"
 

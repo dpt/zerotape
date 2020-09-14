@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "fortify.h"
+#include "fortify/fortify.h"
 
 #include "zt-lex.h"
 #include "zt-gram.h"
