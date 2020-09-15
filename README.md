@@ -14,7 +14,8 @@ Currently it has some limitations:
 
 zerotape files can be written by hand. The following is an example of one:
 
-```// C++ style comments
+```
+// C++ style comments
 
 field = 42;  // assign single field
 array = [ 42, 43 ];  // assign array
@@ -26,7 +27,8 @@ field = $deadbeef;
 field = 0xcafebabe;
 
 // Values can use the basic expressions: +, -, * and /.
-field = ($7f * 2);```
+field = ($7f * 2);
+```
 
 ## Future ideas
 
