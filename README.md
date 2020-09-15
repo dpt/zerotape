@@ -1,36 +1,33 @@
-# zerotape
+# Zerotape
 
-*Work In Progress*
+Zerotape is a C library for loading and saving data structures. It was built to handle the saving and loading of games into my The Great Escape in C project.
 
-zerotape is a small C library for capturing hierarchical data structures to a text file format, then restoring them later. You take the C data structures you want to preserve and write out a description of the structures. zerotape then gives you functions to save and load the structure to and from its standard file format.
+To use it, you take the C data structure that you want to preserve and write a second description of the structure’s fields using `ZT*` macros. You then call the zero tape functions to load and/or save the structure to and from zerotape format.
 
-- zerotape’s file format is a small language: it allows basic expressions
-- It's integer oriented at the moment (no support for strings or floating point types, yet)
-- It's assignment focused (although it's a small language it has no variables yet, or references to symbols, etc.)
+The zerotape format is flexible. It’s a small language which supports a number of basic language features, including assignments, structures and basic expressions. It’s parsed using a language grammar which is fed through the [Lemon](https://www.sqlite.org/lemon.html) parser generator.
 
-zerotape uses the [lemon parser generator](https://sqlite.org/src/doc/trunk/doc/lemon.html). It was built to handle the saving and loading of games into my [The Great Escape in C](https://github.com/dpt/The-Great-Escape-in-C) project.
+Currently it has some limitations:
+- It’s entirely integer focused (there are no strings or floating point types supported)
+- It’s assignment focused (the language has no variables, or references to symbols, etc.)
 
 ## File Format
 
-Quick overview:
+zerotape files can be written by hand. The following is an example of one:
 
-```
-// zerotape has C++ style comments
+```// C++ style comments
 
-field = 42;  // assign a single field
-array = [ 42, 43 ];  // assign an array
-sparsearray = [ 0: 42, 10: 43 ];  // assign numbered elements within an array
-outerfield = { innerfield = 42; }  // nesting/scoped fields
+field = 42;  // assign single field
+array = [ 42, 43 ];  // assign array
+sparsearray = [ 0: 42, 10: 43 ];  // assign elements within array
+upperfield = { field = 42; }  // scoped fields
 
-// Values can be decimal, $hex or 0xhex
-field = 1.23;
+// Values can be decimal, $hex or 0xhex.
 field = $deadbeef;
 field = 0xcafebabe;
 
-// Values can use the basic expressions +, -, * and /
-field = ($7f * 2);
-```
+// Values can use the basic expressions: +, -, * and /.
+field = ($7f * 2);```
 
-## Probable Next Stages
+## Future ideas
 
-- Write a preprocessor to build the structure descriptions by scanning the C structure definitions for specially marked-up structures.
+- A sensible next step would be to write a preprocessor which allows specially marked-up structures to be written once, and to build the zerotape definitions by processing that.
