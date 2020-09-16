@@ -22,7 +22,6 @@ ztast_walk_state_t;
 /* ----------------------------------------------------------------------- */
 
 #ifdef ZT_DEBUG
-
 static void ztast_logf(const ztast_walk_state_t *state, const char *fmt, ...)
 {
   int depth;
@@ -36,11 +35,9 @@ static void ztast_logf(const ztast_walk_state_t *state, const char *fmt, ...)
   vfprintf(state->file, fmt, ap);
   va_end(ap);
 }
-
+#define logf(ARGS) ztast_logf ARGS
 #else
-
-#define ztast_logf(...)
-
+#define logf(ARGS)
 #endif
 
 /* ----------------------------------------------------------------------- */
@@ -56,11 +53,11 @@ static ztresult_t ztast_walk_value(ztast_walk_state_t *state,
   switch (value->type)
   {
   case VAL_INTEGER:
-    ztast_logf(state, "value, integer=%d\n", value->data.integer);
+    logf((state, "value, integer=%d\n", value->data.integer));
     break;
 
   case VAL_DECIMAL:
-    ztast_logf(state, "value, decimal=%d\n", value->data.decimal);
+    logf((state, "value, decimal=%d\n", value->data.decimal));
     break;
 
   default:
@@ -75,7 +72,7 @@ static ztresult_t ztast_walk_expr(ztast_walk_state_t *state,
 {
   int rc;
 
-  ztast_logf(state, "ztast_walk_expr\n");
+  logf((state, "ztast_walk_expr\n"));
 
   state->depth++;
 
@@ -101,7 +98,7 @@ static ztresult_t ztast_walk_expr(ztast_walk_state_t *state,
       {
         i = (elem->index >= 0) ? elem->index : i + 1;
 
-        ztast_logf(state, "arrayelem, index=%d\n", i, elem->expr);
+        logf((state, "arrayelem, index=%d\n", i, elem->expr));
         rc = ztast_walk_expr(state, elem->expr);
         if (rc)
           return rc;
@@ -132,7 +129,7 @@ static ztresult_t ztast_walk_statements(ztast_walk_state_t *state,
   if (statements == NULL)
     return ztresult_OK; /* no statements */
 
-  ztast_logf(state, "ztast_walk_statements\n");
+  logf((state, "ztast_walk_statements\n"));
 
   state->depth++;
 
@@ -142,7 +139,7 @@ static ztresult_t ztast_walk_statements(ztast_walk_state_t *state,
     {
     case STMT_ASSIGNMENT:
       /* FIXME: Bail if types don't match */
-      ztast_logf(state, "assign, name=%s\n", st->u.assignment->id->name);
+      logf((state, "assign, name=%s\n", st->u.assignment->id->name));
       (void) ztast_walk_expr(state, st->u.assignment->expr);
       break;
 
@@ -166,7 +163,7 @@ ztresult_t ztast_walk(ztast_t *ast, void *opaque)
   state.file  = stdout;
   state.depth = 0;
 
-  ztast_logf(&state, "ztast_walk\n");
+  logf((&state, "ztast_walk\n"));
 
   state.depth++;
   rc = ztast_walk_statements(&state, ast->program->statements);

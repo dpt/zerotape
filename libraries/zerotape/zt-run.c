@@ -17,9 +17,9 @@
 /* ----------------------------------------------------------------------- */
 
 #ifdef ZT_DEBUG
-#define logf(...) printf(__VA_ARGS__)
+#define logf(ARGS) printf ARGS
 #else
-#define logf(...)
+#define logf(ARGS)
 #endif
 
 /* ----------------------------------------------------------------------- */
@@ -133,9 +133,9 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
           return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
                                                                              \
         rawarray[index] = integer;                                           \
-        logf("%d=%d,", index, integer);                                      \
+        logf(("%d=%d,", index, integer));                                    \
       }                                                                      \
-      logf("\n");                                                            \
+      logf(("\n"));                                                          \
     }                                                                        \
   } while (0)
 
@@ -195,9 +195,9 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
           return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
                                                                              \
         rawarray[index] = integer;                                           \
-        logf("%d=%d,", index, integer);                                      \
+        logf(("%d=%d,", index, integer));                                    \
       }                                                                      \
-      logf("\n");                                                            \
+      logf(("\n"));                                                          \
     }                                                                        \
   } while (0)
 
@@ -225,7 +225,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
   *syntax_error = NULL;
 
   name = assignment->id->name;
-  logf("assignment to field '%s'\n", name);
+  logf(("assignment to field '%s'\n", name));
   for (f = 0; f < meta->nfields; f++)
     if (strcmp(meta->fields[f].name, name) == 0)
       break;
