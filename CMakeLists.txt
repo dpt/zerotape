@@ -1,18 +1,26 @@
+# CMakeLists.txt
+#
+# zerotape
+#
+# Copyright (c) David Thomas, 2020
+#
+
 cmake_minimum_required(VERSION 3.18)
 
 if(NOT CMAKE_BUILD_TYPE)
-  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+    set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-project(zerotape VERSION 0.0.1 DESCRIPTION "zerotape" LANGUAGES C)
+project(zerotape VERSION 1.0.0 DESCRIPTION "zerotape" LANGUAGES C)
+
 option(USE_FORTIFY "Use Fortify" OFF)
+
+if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
+    # Use -Oz instead of -Os
+    set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG") # should be macOS only!
+endif()
 
 add_executable(lemon libraries/lemon/lemon.c)
 add_subdirectory(libraries/fortify)
 add_subdirectory(libraries/zerotape)
 add_subdirectory(platform/generic)
-
-if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
-	# Use -Oz instead of -Os
-	set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG") # should be macOS only!
-endif()
