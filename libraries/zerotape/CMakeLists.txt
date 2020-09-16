@@ -4,7 +4,7 @@ target_include_directories(zerotape PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_sources(zerotape PRIVATE zt-gram.c zt-gram.h) # add generated sources
 target_include_directories(zerotape PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}) # generated sources need a specific include path setting
 
-if (MSVC)
+if(MSVC)
 	target_compile_options(zerotape PRIVATE /W4 /WX)
 else()
 	target_compile_options(zerotape PRIVATE -std=c89 -Wall -Wextra -pedantic)

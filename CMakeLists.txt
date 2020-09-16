@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 3.18)
 
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
+endif()
+
 project(zerotape VERSION 0.0.1 DESCRIPTION "zerotape" LANGUAGES C)
 option(USE_FORTIFY "Use Fortify" OFF)
 
