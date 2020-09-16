@@ -10,6 +10,11 @@ else()
 	target_compile_options(zerotape PRIVATE -std=c89 -Wall -Wextra -pedantic)
 endif()
 
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+	target_compile_definitions(zerotape PRIVATE ZTAST_LOG ZT_DEBUG)
+endif()
+
+# todo: ZT_USE_HEX
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
 
