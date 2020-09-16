@@ -10,7 +10,6 @@ else()
 	target_compile_options(zerotape PRIVATE -std=c89 -Wall -Wextra -pedantic)
 endif()
 
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Oz")
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
 
