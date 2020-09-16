@@ -166,7 +166,7 @@ static void emitf(savestate_t *state, const char *fmt, ...)
     if (nelems == 1) { /* singletons are rendered as: x = $0; */       \
       emitf(state, "%s = " FMT ";\n", name, *pvalue);                  \
     } else { /* arrays are rendered as: x = [ $0, $1, $2, ...]; */     \
-      int j,k;                                                         \
+      size_t j,k;                                                      \
       emitf(state, "%s = [\n", name);                                  \
       indent(state);                                                   \
       for (j = 0; j < nelems; j += stride) {                           \
