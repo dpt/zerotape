@@ -1,14 +1,14 @@
-# Zerotape
+# zerotape
 
-Zerotape is a C library for loading and saving data structures. It was built to handle the saving and loading of games into my The Great Escape in C project.
+zerotape is a C library for loading and saving data structures to a structured text format. It was built to handle the saving and loading of games into my "The Great Escape in C" project.
 
-To use it, you take the C data structure that you want to preserve and write a second description of the structure’s fields using `ZT*` macros. You then call the zero tape functions to load and/or save the structure to and from zerotape format.
+To use it, you take the C data structure that you want to preserve and write a second description of the structure’s fields using `ZT*` macros. You then call the zerotape library functions to load and/or save the structure to and from zerotape format.
 
 The zerotape format is flexible. It’s a small language which supports a number of basic language features, including assignments, structures and basic expressions. It’s parsed using a language grammar which is fed through the [Lemon](https://www.sqlite.org/lemon.html) parser generator.
 
 Currently it has some limitations:
-- It’s entirely integer focused (there are no strings or floating point types supported)
-- It’s assignment focused (the language has no variables, or references to symbols, etc.)
+- It’s entirely integer focused (there are no string or floating point types supported)
+- It’s assignment focused (the language has no types, variables, or references to symbols, etc.)
 
 ## File Format
 
@@ -30,6 +30,6 @@ field = 0xcafebabe;
 field = ($7f * 2);
 ```
 
-## Future ideas
+## Future Ideas
 
 - A sensible next step would be to write a preprocessor which allows specially marked-up structures to be written once, and to build the zerotape definitions by processing that.
