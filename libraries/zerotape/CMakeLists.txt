@@ -14,7 +14,11 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
 	target_compile_definitions(zerotape PRIVATE ZTAST_LOG ZT_DEBUG)
 endif()
 
-# todo: ZT_USE_HEX
+option(ZT_USE_HEX "Use hex for saves, or decimal otherwise" ON)
+
+if (ZT_USE_HEX)
+	target_compile_options(zerotape PRIVATE -DZT_USE_HEX)
+endif()
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
 
