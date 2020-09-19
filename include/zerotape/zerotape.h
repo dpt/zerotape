@@ -3,6 +3,10 @@
 #ifndef ZEROTAPE_H
 #define ZEROTAPE_H
 
+#ifdef __cplusplus
+#include <cstddef>
+extern "C" {
+#else
 #include <stddef.h>
 
 /* ----------------------------------------------------------------------- */
@@ -287,6 +291,10 @@ ztresult_t zt_save(const ztstruct_t *meta,
                    int               nregions);
 
 /* ----------------------------------------------------------------------- */
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* ZEROTAPE_H */
 
