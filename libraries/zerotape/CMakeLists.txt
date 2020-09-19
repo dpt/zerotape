@@ -37,3 +37,6 @@ if(USE_FORTIFY)
 	target_compile_definitions(zerotape PRIVATE FORTIFY)
 	target_link_libraries(zerotape PUBLIC Fortify)
 endif()
+
+install(FILES ${CMAKE_SOURCE_DIR}/include/zerotape/zerotape.h DESTINATION include)
+install(TARGETS zerotape DESTINATION lib)
