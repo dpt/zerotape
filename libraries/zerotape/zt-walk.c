@@ -122,7 +122,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
               return rc;
 
             rc = zt_walk(f->metadata,
-                         pstruct,
+                         (char *) pstruct + i * f->size,
                          regions,
                          nregions,
                          handlers,
@@ -144,8 +144,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
     case zttype_structptr:
       {
-        const unsigned char **ppdata  = (const unsigned char **) rawvalue;
-        const void           *pstruct = *ppdata;
+        const unsigned char **ppstruct = (const unsigned char **) rawvalue;
 
         if (f->nelems == 1)
         {
@@ -154,7 +153,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
             return rc;
 
           rc = zt_walk(f->metadata,
-                       pstruct,
+                       *ppstruct,
                        regions,
                        nregions,
                        handlers,
@@ -181,7 +180,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
               return rc;
 
             rc = zt_walk(f->metadata,
-                         pstruct,
+                         *ppstruct++,
                          regions,
                          nregions,
                          handlers,
