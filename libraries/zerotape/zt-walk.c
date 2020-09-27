@@ -14,7 +14,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                    const void             *structure,
                    const ztregion_t       *regions,
                    int                     nregions,
-                   const ztwalkhandlers_t *handlers,
+                   const ztwalkhandlers_t *walkhandlers,
                    void                   *opaque)
 {
   int              rc;
@@ -30,7 +30,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
     case zttype_uchar:
       {
         const ztuchar_t *pvalue = rawvalue;
-        rc = handlers->uchar(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->uchar(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -40,7 +40,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
       {
         const ztuchar_t **ppdata = (const ztuchar_t **) rawvalue;
         const ztuchar_t  *pvalue = *ppdata;
-        rc = handlers->uchar(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->uchar(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -49,7 +49,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
     case zttype_ushort:
       {
         const ztushort_t *pvalue = rawvalue;
-        rc = handlers->ushort(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->ushort(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -59,7 +59,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
       {
         const ztushort_t **ppdata = (const ztushort_t **) rawvalue;
         const ztushort_t  *pvalue = *ppdata;
-        rc = handlers->ushort(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->ushort(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -68,7 +68,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
     case zttype_uint:
       {
         const ztuint_t *pvalue = rawvalue;
-        rc = handlers->uint(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->uint(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -78,7 +78,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
       {
         const ztuint_t **ppdata = (const ztuint_t **) rawvalue;
         const ztuint_t  *pvalue = *ppdata;
-        rc = handlers->uint(f->name, pvalue, f->nelems, stride, opaque);
+        rc = walkhandlers->uint(f->name, pvalue, f->nelems, stride, opaque);
         if (rc)
           return rc;
         break;
@@ -90,7 +90,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
         if (f->nelems == 1)
         {
-          rc = handlers->startstruct(f->name, opaque);
+          rc = walkhandlers->startstruct(f->name, opaque);
           if (rc)
             return rc;
 
@@ -98,12 +98,12 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                        pstruct,
                        regions,
                        nregions,
-                       handlers,
+                       walkhandlers,
                        opaque);
           if (rc)
             return rc;
 
-          rc = handlers->endstruct(opaque);
+          rc = walkhandlers->endstruct(opaque);
           if (rc)
             return rc;
         }
@@ -111,13 +111,13 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
         {
           int i;
 
-          rc = handlers->startarray(f->name, f->nelems, opaque);
+          rc = walkhandlers->startarray(f->name, f->nelems, opaque);
           if (rc)
             return rc;
 
           for (i = 0; i < f->nelems; i++)
           {
-            rc = handlers->startstruct(NULL, opaque);
+            rc = walkhandlers->startstruct(NULL, opaque);
             if (rc)
               return rc;
 
@@ -125,17 +125,17 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                          (char *) pstruct + i * f->size,
                          regions,
                          nregions,
-                         handlers,
+                         walkhandlers,
                          opaque);
             if (rc)
               return rc;
 
-            rc = handlers->endstruct(opaque);
+            rc = walkhandlers->endstruct(opaque);
             if (rc)
               return rc;
           }
 
-          rc = handlers->endarray(opaque);
+          rc = walkhandlers->endarray(opaque);
           if (rc)
             return rc;
         }
@@ -148,7 +148,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
         if (f->nelems == 1)
         {
-          rc = handlers->startstruct(f->name, opaque);
+          rc = walkhandlers->startstruct(f->name, opaque);
           if (rc)
             return rc;
 
@@ -156,12 +156,12 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                        *ppstruct,
                        regions,
                        nregions,
-                       handlers,
+                       walkhandlers,
                        opaque);
           if (rc)
             return rc;
 
-          rc = handlers->endstruct(opaque);
+          rc = walkhandlers->endstruct(opaque);
           if (rc)
             return rc;
         }
@@ -169,13 +169,13 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
         {
           int j;
 
-          rc = handlers->startarray(f->name, f->nelems, opaque);
+          rc = walkhandlers->startarray(f->name, f->nelems, opaque);
           if (rc)
             return rc;
 
           for (j = 0; j < f->nelems; j++)
           {
-            rc = handlers->startstruct(NULL, opaque);
+            rc = walkhandlers->startstruct(NULL, opaque);
             if (rc)
               return rc;
 
@@ -183,17 +183,17 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
                          *ppstruct++,
                          regions,
                          nregions,
-                         handlers,
+                         walkhandlers,
                          opaque);
             if (rc)
               return rc;
 
-            rc = handlers->endstruct(opaque);
+            rc = walkhandlers->endstruct(opaque);
             if (rc)
               return rc;
           }
 
-          rc = handlers->endarray(opaque);
+          rc = walkhandlers->endarray(opaque);
           if (rc)
             return rc;
         }
@@ -223,7 +223,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
         index = (ptr - base) / (array->length / array->nelems);
 
-        rc = handlers->index(f->name, index, opaque);
+        rc = walkhandlers->index(f->name, index, opaque);
         if (rc)
           return rc;
 
@@ -263,7 +263,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
         index = (ptr - base) / (array->length / array->nelems);
 
-        rc = handlers->index(f->name, index, opaque);
+        rc = walkhandlers->index(f->name, index, opaque);
         if (rc)
           return rc;
 
@@ -273,7 +273,16 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
     case zttype_version:
       {
         const ztversion_t *pvalue = rawvalue;
-        rc = handlers->version(f->name, *pvalue, opaque);
+        rc = walkhandlers->version(f->name, *pvalue, opaque);
+        if (rc)
+          return rc;
+        break;
+      }
+
+    case zttype_custom:
+      {
+        const void *pvalue = rawvalue;
+        rc = walkhandlers->custom(f->name, f->typeidx, pvalue, opaque);
         if (rc)
           return rc;
         break;

@@ -13,6 +13,8 @@ typedef void *(ztast_mallocfn_t)(size_t);
 typedef void (ztast_freefn_t)(void *);
 typedef void (ztast_logfn_t)(const char *fmt, ...);
 
+/* ----------------------------------------------------------------------- */
+
 typedef struct ztast ztast_t;
 
 ztast_t *ztast_create(ztast_mallocfn_t *mallocfn,
@@ -22,16 +24,18 @@ void ztast_destroy(ztast_t *ast);
 
 /* ----------------------------------------------------------------------- */
 
-typedef struct ztast_program ztast_program_t;
-typedef struct ztast_statement ztast_statement_t;
-typedef struct ztast_assignment ztast_assignment_t;
-typedef struct ztast_id ztast_id_t;
-typedef struct ztast_value ztast_value_t;
-typedef struct ztast_expr ztast_expr_t;
-typedef struct ztast_array ztast_array_t;
-typedef int ztast_arrayindex_t;
-typedef struct ztast_arrayelem ztast_arrayelem_t;
-typedef struct ztast_scope ztast_scope_t;
+struct ztast
+{
+  /* root node */
+  ztast_program_t  *program;
+
+  /* virtual functions */
+  ztast_mallocfn_t *mallocfn;
+  ztast_freefn_t   *freefn;
+#ifdef ZTAST_LOG
+  ztast_logfn_t    *logfn;
+#endif
+};
 
 /* ----------------------------------------------------------------------- */
 

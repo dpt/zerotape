@@ -9,11 +9,13 @@
 #include "zt-parser.h"
 #include "zt-run.h"
 
-ztresult_t zt_load(const ztstruct_t *meta,
-                   void             *structure,
-                   const char       *filename,
-                   const ztregion_t *regions,
-                   int               nregions)
+ztresult_t zt_load(const ztstruct_t  *meta,
+                   void              *structure,
+                   const char        *filename,
+                   const ztregion_t  *regions,
+                   int                nregions,
+                   ztloader_t       **loaders,
+                   int                nloaders)
 {
   ztresult_t rc;
   ztast_t   *ast;
@@ -33,10 +35,12 @@ ztresult_t zt_load(const ztstruct_t *meta,
                       meta,
                       regions,
                       nregions,
+                      loaders,
+                      nloaders,
                       structure,
                       &syntax_error);
   if (rc != ztresult_OK)
-    puts(syntax_error);
+    puts(syntax_error); // FIXME
 
   return rc;
 }

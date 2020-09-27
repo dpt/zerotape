@@ -12,37 +12,59 @@
 
 /* ----------------------------------------------------------------------- */
 
-/* YOUR STUFF */
+/*
+ * THE USER'S STUFF
+ */
 
-typedef struct substruct
+/* A sub-structure used in a couple of the examples. */
+typedef struct sub
 {
-  unsigned char a;
+  unsigned char value;
 }
-substruct_t;
+sub_t;
 
-/* This is a struct that you want to serialise. */
+/* Example structure. */
 typedef struct example
 {
   unsigned int  integer;
-  unsigned int *pinteger;
-  substruct_t   sub;
-  substruct_t  *subptr;
-  substruct_t   subarray[3];
+  unsigned int *pointer_to_integer;
+
+  sub_t         inline_sub;
+  sub_t        *pointer_to_sub;
+  sub_t         array_of_sub[3];
+
   const char   *static_pointer; /* indexes example_array[] which is static */
   const char   *pointer; /* indexes a malloced block */
+
+  /* This custom field is not representable with stock zerotape types. It
+   * points at one of popular_beat_combo[], but we want to store it as an
+   * index into that array, so it needs custom load and save functions. */
+  const char   *string_in_array;
 }
 example_t;
 
-static unsigned int j_random_int = 77;
+/* A table of strings used by the custom field example. */
+static const char *popular_beat_combo[] =
+{
+  "John",
+  "Paul",
+  "George",
+  "Ringo"
+};
 
-/* This is an array that static_pointer indexes. */
+/* A value that gets pointed at. */
+static unsigned int pointed_at = 33;
+
+/* An array that static_pointer indexes. */
 static const char example_array[] = { 44, 55, 66 };
 
 /* ----------------------------------------------------------------------- */
 
-/* ZEROTAPE STUFF */
+/*
+ * ZEROTAPE'S STUFF
+ */
 
-/* This is the zerotape description of 'example_array'. */
+/* Describes 'example_array'. */
 static const ztarray_t example_array_desc =
 {
   &example_array[0],
@@ -50,34 +72,45 @@ static const ztarray_t example_array_desc =
   NELEMS(example_array)
 };
 
-/* This is the zerotape identifier for some array yet-to-be created. */
-static const char array_id[] = "some identifier";
+/* Identifies an array unknown at compile time. */
+static const char tenbyte_id[] = "some array";
 
+/* Describes the 'sub_t' fields. */
 static const ztfield_t substruct_fields[] =
 {
-  ZTUCHAR(a, substruct_t)
+  ZTUCHAR(value, sub_t)
 };
+
+/* Describes a 'sub_t' itself. */
 static const ztstruct_t substruct_meta =
 {
   NELEMS(substruct_fields),
   substruct_fields
 };
 
+/* An ID for our custom type. */
+#define CUSTOMTYPE_BAND_MEMBER 0
+
 /* This is the zerotape description of your struct's fields. Note that it
- * doesn't have to define every part of your struct; just the parts you want to
+ * doesn't have to define every part of your struct: just the parts you want to
  * preserve. (It currently doesn't necessarily have to be in the same order as
- * the original struct either, but don't rely on that.) */
+ * the original struct either, but maybe don't rely on that.) */
 static const ztfield_t example_fields[] =
 {
   ZTUINT(integer, example_t),
-  ZTUINTPTR(pinteger, example_t),
-  ZTSTRUCT(sub, example_t, substruct_t, &substruct_meta),
-  ZTSTRUCTPTR(subptr, example_t, substruct_t *, &substruct_meta),
-  ZTSTRUCTARRAY(subarray, example_t, substruct_t, 3, &substruct_meta),
-  /* 'static_pointer' points at somewhere in example_array, so a description is created in example_array_desc and referenced. An integer array index will be output. */
+  ZTUINTPTR(pointer_to_integer, example_t),
+  ZTSTRUCT(inline_sub, example_t, sub_t, &substruct_meta),
+  ZTSTRUCTPTR(pointer_to_sub, example_t, sub_t *, &substruct_meta),
+  ZTSTRUCTARRAY(array_of_sub, example_t, sub_t, 3, &substruct_meta),
+  /* 'static_pointer' points at somewhere in example_array, so a description
+   * for that is created in example_array_desc and referenced. An integer
+   * array index will be output. */
   ZTARRAYIDX_STATIC(static_pointer, example_t, const char *, &example_array_desc),
-  /* 'pointer' points at somewhere in a block that's unknown at compile time, so we assign it an array ID which will be used. An integer array index will be output. */
-  ZTARRAYIDX(pointer, example_t, const char *, array_id)
+  /* 'pointer' points at somewhere in a block that's unknown at compile time, so
+   * we assign it an array ID which will be used. An integer array index will be
+   * output. */
+  ZTARRAYIDX(pointer, example_t, const char *, tenbyte_id),
+  ZTCUSTOM(string_in_array, example_t, CUSTOMTYPE_BAND_MEMBER)
 };
 
 /* This is the zerotape description of your struct. */
@@ -89,44 +122,145 @@ static const ztstruct_t example_meta =
 
 /* ----------------------------------------------------------------------- */
 
+/*
+ * CUSTOM FIELD HANDLERS
+ */
+
+/* This is a custom value save handler. It takes the value from the struct
+ * and formats it into text so it can be output to file. */
+ztresult_t bandmember_saver(const void *pvoidval, char *buf, size_t bufsz)
+{
+  const char **ppcharval = (const char **) pvoidval;
+  int          i;
+
+  for (i = 0; i < NELEMS(popular_beat_combo); i++)
+    if (popular_beat_combo[i] == *ppcharval)
+      break;
+  if (i == NELEMS(popular_beat_combo))
+    return ztresult_BAD_POINTER;
+
+  sprintf(buf, "%d", i);
+  return ztresult_OK;
+}
+
+/* This is a custom value load handler. It receives the input AST and
+ * interprets it, producing a value to be stored to the struct.
+ *
+ * The AST can only ever be composed of elements of which zerotape's lexer
+ * and parser are aware. So, for example, if you wanted a quoted string to be
+ * available here, it would be more work elsewhere.
+ *
+ * Since you will receive whatever AST has been given in the input file you
+ * must be careful to validate as much as possible. The AST could contain
+ * *any* valid program expression.
+ */
+ztresult_t bandmember_loader(const ztast_expr_t *expr,
+                             void               *pvoidval,
+                             char              **syntax_error)
+{
+  const char **ppcharval = (const char **) pvoidval;
+  int          index;
+
+  if (expr->type != ZTEXPR_VALUE)
+  {
+    *syntax_error = "value type required (custom)"; /* ztsyntx_NEED_VALUE */
+    return ztresult_SYNTAX_ERROR;
+  }
+  if (expr->data.value->type != ZTVAL_INTEGER)
+  {
+    *syntax_error = "integer type required (custom)"; /* ztsyntx_NEED_INTEGER */
+    return ztresult_SYNTAX_ERROR;
+  }
+  index = expr->data.value->data.integer;
+  if (index < 0 || index >= NELEMS(popular_beat_combo))
+  {
+    *syntax_error = "value out of range (custom)"; /* ztsyntx_VALUE_RANGE */
+    return ztresult_SYNTAX_ERROR;
+  }
+
+  *ppcharval = popular_beat_combo[index];
+  *syntax_error = NULL;
+  return ztresult_OK;
+}
+
+/* ----------------------------------------------------------------------- */
+
 int main(int argc, const char *argv[])
 {
+  static const char testfile[] = "demo.zt";
+
   ztresult_t  rc;
-  char       *array;
+  char       *tenbyte;
   example_t   example;
-  ztregion_t  regions[1]; /* heap blocks */
-  substruct_t localsub;
+  ztregion_t  regions[1]; /* descriptions of heap blocks */
+  sub_t       sub;
+  ztsaver_t  *savers[1];
+  ztloader_t *loaders[1];
 
-  array = malloc(10);
-  if (array == NULL)
+  tenbyte = malloc(10);
+  if (tenbyte == NULL)
     return EXIT_FAILURE;
 
-  localsub.a = 51;
+  sub.value = 51;
 
-  example.integer        = 42;
-  example.pinteger       = &j_random_int;
-  example.sub.a          = 43;
-  example.subptr         = &localsub;
-  example.subarray[0].a  = 44;
-  example.subarray[1].a  = 45;
-  example.subarray[2].a  = 46;
-  example.static_pointer = &example_array[2];
-  example.pointer        = &array[5];
+  example.integer               = 42;
+  example.pointer_to_integer    = &pointed_at;
+  example.inline_sub.value      = 43;
+  example.pointer_to_sub        = &sub;
+  example.array_of_sub[0].value = 44;
+  example.array_of_sub[1].value = 45;
+  example.array_of_sub[2].value = 46;
+  example.static_pointer        = &example_array[2];
+  example.pointer               = &tenbyte[5];
+  example.string_in_array       = popular_beat_combo[3];
 
-  regions[0].id          = array_id;
-  regions[0].spec.base   = array;
-  regions[0].spec.length = 10;
-  regions[0].spec.nelems = 10;
+  regions[0].id                 = tenbyte_id;
+  regions[0].spec.base          = tenbyte;
+  regions[0].spec.length        = 10;
+  regions[0].spec.nelems        = 10;
 
-  rc = zt_save(&example_meta, &example, "test.zt", &regions[0], NELEMS(regions));
+  savers[CUSTOMTYPE_BAND_MEMBER] = bandmember_saver;
+  rc = zt_save(&example_meta,
+               &example,
+                testfile,
+               &regions[0],
+                NELEMS(regions),
+                savers,
+               NELEMS(savers));
   if (rc != ztresult_OK)
+  {
+    fprintf(stderr, "zt_save failed (%d)\n", rc);
     return EXIT_FAILURE;
+  }
 
-  rc = zt_load(&example_meta, &example, "test.zt", &regions[0], NELEMS(regions));
+  memset(&example, 0x55, sizeof(example_t));
+  example.pointer_to_integer    = &pointed_at;
+  example.pointer_to_sub        = &sub;
+
+  loaders[CUSTOMTYPE_BAND_MEMBER] = bandmember_loader;
+  rc = zt_load(&example_meta,
+               &example,
+                testfile,
+               &regions[0],
+                NELEMS(regions),
+                loaders,
+               NELEMS(loaders));
   if (rc != ztresult_OK)
+  {
+    fprintf(stderr, "zt_load failed (%d)\n", rc);
     return EXIT_FAILURE;
+  }
 
   assert(example.integer == 42);
+  assert(pointed_at == 33);
+  assert(example.inline_sub.value == 43);
+  assert(example.pointer_to_sub->value == 51);
+  assert(example.array_of_sub[0].value == 44);
+  assert(example.array_of_sub[1].value == 45);
+  assert(example.array_of_sub[2].value == 46);
+  assert(example.static_pointer == &example_array[2]);
+  assert(example.pointer == &tenbyte[5]);
+  assert(example.string_in_array == popular_beat_combo[3]);
 
   return EXIT_SUCCESS;
 }

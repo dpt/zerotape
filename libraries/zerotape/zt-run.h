@@ -14,6 +14,8 @@
  * \param meta description of 'structure'
  * \param regions runtime heap array specs
  * \param nregions number of heap array specs
+ * \param loaders array of loader functions - one per custom ID
+ * \param nloaders number of loader functions
  * \param structure structure to populate
  * \param syntax_error error message, or NULL if none
  */
@@ -21,6 +23,8 @@ ztresult_t zt_run_program(const ztast_t    *ast,
                           const ztstruct_t *meta,
                           const ztregion_t *regions,
                           int               nregions,
+                          ztloader_t      **loaders,
+                          int               nloaders,
                           void             *structure,
                           char            **syntax_error);
 

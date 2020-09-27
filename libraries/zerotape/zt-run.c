@@ -10,7 +10,7 @@
 #include "zerotape/zerotape.h"
 
 #include "zt-parser.h"
-#include "zt-ast-impl.h"
+#include "zt-ast.h"
 
 #include "zt-run.h"
 
@@ -30,6 +30,8 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
                                     const ztstruct_t        *meta,
                                     const ztregion_t        *regions,
                                     int                      nregions,
+                                    ztloader_t             **loaders,
+                                    int                      nloaders,
                                     void                    *structure,
                                     char                   **syntax_error);
 
@@ -48,7 +50,8 @@ typedef enum ztsyntaxerr
   ztsyntx_UNKNOWN_FIELD,
   ztsyntx_UNKNOWN_REGION,
   ztsyntx_UNSUPPORTED,
-  ztsyntx_VALUE_RANGE
+  ztsyntx_VALUE_RANGE,
+  ztsyntx__LIMIT
 }
 ztsyntaxerr_t;
 
@@ -68,7 +71,10 @@ static const char *zt_syntaxstring(ztsyntaxerr_t e)
     /* ztsyntx_UNSUPPORTED */ "unsupported",
     /* ztsyntx_VALUE_RANGE */ "value out of range"
   };
-  return tab[e];
+  if (e < ztsyntx__LIMIT)
+    return tab[e];
+  else
+    return "unknown error";
 }
 
 /** Build and return a syntax error message. */
@@ -91,10 +97,10 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       unsigned int         integer;                                          \
                                                                              \
       expr = assignment->expr;                                               \
-      if (expr->type != EXPR_VALUE)                                          \
+      if (expr->type != ZTEXPR_VALUE)                                        \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
       value = expr->data.value;                                              \
-      if (value->type != VAL_INTEGER)                                        \
+      if (value->type != ZTVAL_INTEGER)                                      \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);              \
       integer = value->data.integer;                                         \
       if (integer < 0 || integer > MAX)                                      \
@@ -109,7 +115,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       const ztast_arrayelem_t *elem;                                         \
                                                                              \
       arrayexpr = assignment->expr;                                          \
-      if (arrayexpr->type != EXPR_ARRAY)                                     \
+      if (arrayexpr->type != ZTEXPR_ARRAY)                                   \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);                \
                                                                              \
       index    = -1;                                                         \
@@ -123,10 +129,10 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
         index = (elem->index >= 0) ? elem->index : index + 1;                \
                                                                              \
         expr = elem->expr;                                                   \
-        if (expr->type != EXPR_VALUE)                                        \
+        if (expr->type != ZTEXPR_VALUE)                                      \
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
         value = expr->data.value;                                            \
-        if (value->type != VAL_INTEGER)                                      \
+        if (value->type != ZTVAL_INTEGER)                                    \
           return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_TYPE);         \
         integer = value->data.integer;                                       \
         if (integer < 0 || integer > MAX)                                    \
@@ -150,10 +156,10 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       unsigned int         integer;                                          \
                                                                              \
       valueexpr = assignment->expr;                                          \
-      if (valueexpr->type != EXPR_VALUE)                                     \
+      if (valueexpr->type != ZTEXPR_VALUE)                                   \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
       value = valueexpr->data.value;                                         \
-      if (value->type != VAL_INTEGER)                                        \
+      if (value->type != ZTVAL_INTEGER)                                      \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);              \
       integer = value->data.integer;                                         \
       if (integer < 0 || integer > MAX)                                      \
@@ -170,7 +176,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       const ztast_arrayelem_t *elem;                                         \
                                                                              \
       arrayexpr = assignment->expr;                                          \
-      if (arrayexpr->type != EXPR_ARRAY)                                     \
+      if (arrayexpr->type != ZTEXPR_ARRAY)                                   \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);                \
                                                                              \
       index     = -1;                                                        \
@@ -185,10 +191,10 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
         index = (elem->index >= 0) ? elem->index : index + 1;                \
                                                                              \
         expr = elem->expr;                                                   \
-        if (expr->type != EXPR_VALUE)                                        \
+        if (expr->type != ZTEXPR_VALUE)                                      \
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
         value = expr->data.value;                                            \
-        if (value->type != VAL_INTEGER)                                      \
+        if (value->type != ZTVAL_INTEGER)                                    \
           return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_TYPE);         \
         integer = value->data.integer;                                       \
         if (integer < 0 || integer > MAX)                                    \
@@ -208,13 +214,17 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
  * \param meta description of 'structure'
  * \param regions runtime heap array specs
  * \param nregions number of heap array specs
+ * \param loaders array of loader functions - one per custom ID
+ * \param nloaders number of loader functions
  * \param structure structure to populate
- * \param syntax_error error message, or NULL if none
+ * \param syntax_error error message if (result != ztresult_OK), else NULL
  */
 static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                                    const ztstruct_t         *meta,
                                    const ztregion_t         *regions,
                                    int                       nregions,
+                                   ztloader_t              **loaders,
+                                   int                       nloaders,
                                    void                     *structure,
                                    char                    **syntax_error)
 {
@@ -263,7 +273,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       void               *rawstruct;
 
       scopeexpr = assignment->expr;
-      if (scopeexpr->type != EXPR_SCOPE)
+      if (scopeexpr->type != ZTEXPR_SCOPE)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
 
       rawstruct = PVAL(structure, field->offset);
@@ -272,6 +282,8 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                              field->metadata,
                              regions,
                              nregions,
+                             loaders,
+                             nloaders,
                              rawstruct,
                              syntax_error);
       if (rc)
@@ -287,7 +299,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       const ztast_arrayelem_t *elem;
 
       arrayexpr = assignment->expr;
-      if (arrayexpr->type != EXPR_ARRAY)
+      if (arrayexpr->type != ZTEXPR_ARRAY)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);
 
       index = -1;
@@ -302,13 +314,15 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         index = (elem->index >= 0) ? elem->index : index + 1;
 
         expr = elem->expr;
-        if (expr->type != EXPR_SCOPE)
+        if (expr->type != ZTEXPR_SCOPE)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
 
         rc = zt_run_statements(expr->data.scope->statements,
                                field->metadata,
                                regions,
                                nregions,
+                               loaders,
+                               nloaders,
                       (char *) rawstruct + index * elsz,
                                syntax_error);
         if (rc)
@@ -326,7 +340,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       void               *rawstruct;
 
       scopeexpr = assignment->expr;
-      if (scopeexpr->type != EXPR_SCOPE)
+      if (scopeexpr->type != ZTEXPR_SCOPE)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
 
       prawstruct = PVAL(structure, field->offset);
@@ -336,6 +350,8 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                              field->metadata,
                              regions,
                              nregions,
+                             loaders,
+                             nloaders,
                              rawstruct,
                              syntax_error);
       if (rc)
@@ -352,7 +368,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       const ztast_arrayelem_t *elem;
 
       arrayexpr = assignment->expr;
-      if (arrayexpr->type != EXPR_ARRAY)
+      if (arrayexpr->type != ZTEXPR_ARRAY)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);
 
       index = -1;
@@ -368,13 +384,15 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         index = (elem->index >= 0) ? elem->index : index + 1;
 
         expr = elem->expr;
-        if (expr->type != EXPR_SCOPE)
+        if (expr->type != ZTEXPR_SCOPE)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
 
         rc = zt_run_statements(expr->data.scope->statements,
                                field->metadata,
                                regions,
                                nregions,
+                               loaders,
+                               nloaders,
                       (char *) rawstruct + index * elsz,
                                syntax_error);
         if (rc)
@@ -385,7 +403,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
   case zttype_staticarrayidx:
     assert(field->array);
-    assert(field->regionid == ZT_NO_HEAPID);
+    assert(field->regionid == ZT_NO_REGIONID);
     if (field->nelems == 1) /* expecting a single element */
     {
       const size_t        elsz = field->array->length / field->array->nelems; /* field->array->length is total size of array */
@@ -394,9 +412,9 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       void              **prawvalue;
 
       assignmentexpr = assignment->expr;
-      if (assignmentexpr->type != EXPR_VALUE)
+      if (assignmentexpr->type != ZTEXPR_VALUE)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-      if (assignmentexpr->data.value->type != VAL_INTEGER)
+      if (assignmentexpr->data.value->type != ZTVAL_INTEGER)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);
       index = assignmentexpr->data.value->data.integer;
       if (index < 0 || index >= field->array->nelems)
@@ -436,9 +454,9 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         void              **prawvalue;
 
         assignmentexpr = assignment->expr;
-        if (assignmentexpr->type != EXPR_VALUE)
+        if (assignmentexpr->type != ZTEXPR_VALUE)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-        if (assignmentexpr->data.value->type != VAL_INTEGER)
+        if (assignmentexpr->data.value->type != ZTVAL_INTEGER)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);
         index = assignmentexpr->data.value->data.integer;
         if (index < 0 || index >= array->nelems)
@@ -462,9 +480,9 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       int                *prawvalue;
 
       assignmentexpr = assignment->expr;
-      if (assignmentexpr->type != EXPR_VALUE)
+      if (assignmentexpr->type != ZTEXPR_VALUE)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-      if (assignmentexpr->data.value->type != VAL_DECIMAL)
+      if (assignmentexpr->data.value->type != ZTVAL_DECIMAL)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_DECIMAL);
       decimal = assignmentexpr->data.value->data.decimal;
       if (decimal < 0 || decimal > 999)
@@ -472,6 +490,25 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       prawvalue = PVAL(structure, field->offset);
       *prawvalue = decimal;
+    }
+    else /* expecting an array */
+    {
+      return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+    }
+    break;
+
+  case zttype_custom:
+    if (field->nelems == 1) /* expecting a single element */
+    {
+      const ztast_expr_t *assignmentexpr;
+      void               *prawvalue;
+
+      assignmentexpr = assignment->expr;
+      if (assignmentexpr->type != ZTEXPR_VALUE)
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+
+      prawvalue = PVAL(structure, field->offset);
+      return loaders[field->typeidx](assignmentexpr, prawvalue, syntax_error);
     }
     else /* expecting an array */
     {
@@ -490,6 +527,8 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
  * \param meta description of 'structure'
  * \param regions runtime heap array specs
  * \param nregions number of heap array specs
+ * \param loaders array of loader functions - one per custom ID
+ * \param nloaders number of loader functions
  * \param structure structure to populate
  * \param syntax_error error message, or NULL if none
  */
@@ -497,6 +536,8 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
                                     const ztstruct_t        *meta,
                                     const ztregion_t        *regions,
                                     int                      nregions,
+                                    ztloader_t             **loaders,
+                                    int                      nloaders,
                                     void                    *structure,
                                     char                   **syntax_error)
 {
@@ -507,11 +548,13 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
   {
     switch (statement->type)
     {
-    case STMT_ASSIGNMENT:
+    case ZTSTMT_ASSIGNMENT:
       rc = zt_do_assignment(statement->u.assignment,
                             meta,
                             regions,
                             nregions,
+                            loaders,
+                            nloaders,
                             structure,
                             syntax_error);
       if (rc)
@@ -526,12 +569,14 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
   return ztresult_OK;
 }
 
-ztresult_t zt_run_program(const ztast_t    *ast,
-                          const ztstruct_t *metastruct,
-                          const ztregion_t *regions,
-                          int               nregions,
-                          void             *structure,
-                          char            **syntax_error)
+ztresult_t zt_run_program(const ztast_t     *ast,
+                          const ztstruct_t  *metastruct,
+                          const ztregion_t  *regions,
+                          int                nregions,
+                          ztloader_t       **loaders,
+                          int                nloaders,
+                          void              *structure,
+                          char             **syntax_error)
 {
   if (ast->program == NULL)
     return ztresult_NO_PROGRAM;
@@ -540,6 +585,8 @@ ztresult_t zt_run_program(const ztast_t    *ast,
                            metastruct,
                            regions,
                            nregions,
+                           loaders,
+                           nloaders,
                            structure,
                            syntax_error);
 }

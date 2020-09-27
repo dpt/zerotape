@@ -14,7 +14,7 @@
 
 /* printf formatting token for outputting integers. */
 #ifdef ZT_USE_HEX
-#define FMT "$%X" // hex
+#define FMT "$%X" /* hex */
 #else
 #define FMT "%u"
 #endif
@@ -112,10 +112,12 @@ static void savestack_destroy(save_stack_t *stack)
 
 typedef struct savestate
 {
-  FILE        *f;
-  int          indent_is_due;
-  int          depth;
-  save_stack_t stack;
+  FILE              *f;
+  int                indent_is_due;
+  int                depth;
+  save_stack_t       stack;
+  ztsaver_t        **savers;
+  int                nsavers;
 }
 savestate_t;
 
@@ -181,58 +183,58 @@ static void emitf(savestate_t *state, const char *fmt, ...)
 
 /* ----------------------------------------------------------------------- */
 
-static ztresult_t handler_uchar(const char      *name,
-                                const ztuchar_t *pvalue,
-                                size_t           nelems,
-                                size_t           stride,
-                                void            *opaque)
+static ztresult_t savehandler_uchar(const char      *name,
+                                    const ztuchar_t *pvalue,
+                                    size_t           nelems,
+                                    size_t           stride,
+                                    void            *opaque)
 {
   savestate_t *state = opaque;
   DUMP(byte_t);
   return ztresult_OK;
 }
 
-static ztresult_t handler_ushort(const char       *name,
-                                 const ztushort_t *pvalue,
-                                 size_t            nelems,
-                                 size_t            stride,
-                                 void             *opaque)
+static ztresult_t savehandler_ushort(const char       *name,
+                                     const ztushort_t *pvalue,
+                                     size_t            nelems,
+                                     size_t            stride,
+                                     void             *opaque)
 {
   savestate_t *state = opaque;
   DUMP(half_t);
   return ztresult_OK;
 }
 
-static ztresult_t handler_uint(const char     *name,
-                               const ztuint_t *pvalue,
-                               size_t          nelems,
-                               size_t          stride,
-                               void           *opaque)
+static ztresult_t savehandler_uint(const char     *name,
+                                   const ztuint_t *pvalue,
+                                   size_t          nelems,
+                                   size_t          stride,
+                                   void           *opaque)
 {
   savestate_t *state = opaque;
   DUMP(word_t);
   return ztresult_OK;
 }
 
-static ztresult_t handler_index(const char *name,
-                                ztindex_t   index,
-                                void       *opaque)
+static ztresult_t savehandler_index(const char *name,
+                                    ztindex_t   index,
+                                    void       *opaque)
 {
   savestate_t *state = opaque;
   emitf(state, "%s = %d;\n", name, index);
   return ztresult_OK;
 }
 
-static ztresult_t handler_version(const char *name,
-                                  ztversion_t version,
-                                  void       *opaque)
+static ztresult_t savehandler_version(const char *name,
+                                      ztversion_t version,
+                                      void       *opaque)
 {
   savestate_t *state = opaque;
   emitf(state, "%s = %.2f;\n", name, (double) version / 100.0);
   return ztresult_OK;
 }
 
-static ztresult_t handler_startstruct(const char *name, void *opaque)
+static ztresult_t savehandler_startstruct(const char *name, void *opaque)
 {
   ztresult_t         rc;
   savestate_t       *state   = opaque;
@@ -263,7 +265,7 @@ static ztresult_t handler_startstruct(const char *name, void *opaque)
   return ztresult_OK;
 }
 
-static ztresult_t handler_endstruct(void *opaque)
+static ztresult_t savehandler_endstruct(void *opaque)
 {
   savestate_t       *state   = opaque;
   savestack_entry_t *scope   = NULL;
@@ -296,7 +298,9 @@ static ztresult_t handler_endstruct(void *opaque)
   return ztresult_OK;
 }
 
-static ztresult_t handler_startarray(const char *name, int nelems, void *opaque)
+static ztresult_t savehandler_startarray(const char *name,
+                                         int         nelems,
+                                         void       *opaque)
 {
   ztresult_t        rc;
   savestate_t      *state = opaque;
@@ -315,7 +319,7 @@ static ztresult_t handler_startarray(const char *name, int nelems, void *opaque)
   return ztresult_OK;
 }
 
-static ztresult_t handler_endarray(void *opaque)
+static ztresult_t savehandler_endarray(void *opaque)
 {
   savestate_t *state = opaque;
 
@@ -327,25 +331,51 @@ static ztresult_t handler_endarray(void *opaque)
   return ztresult_OK;
 }
 
+static ztresult_t savehandler_custom(const char *name,
+                                     int         customid,
+                                     const void *value,
+                                     void       *opaque)
+{
+  ztresult_t   rc;
+  savestate_t *state = opaque;
+  char         buf[100];
+
+  if (customid < 0 || customid >= state->nsavers)
+    return ztresult_BAD_CUSTOMID;
+
+  buf[0] = '\0';
+
+  rc = state->savers[customid](value, buf, sizeof(buf));
+  if (rc)
+    return rc;
+
+  emitf(state, "%s = %s;\n", name, buf);
+
+  return ztresult_OK;
+}
+
 /* ----------------------------------------------------------------------- */
 
-ztresult_t zt_save(const ztstruct_t *metastruct,
-                   const void       *structure,
-                   const char       *filename,
-                   const ztregion_t *regions,
-                   int               nregions)
+ztresult_t zt_save(const ztstruct_t  *metastruct,
+                   const void        *structure,
+                   const char        *filename,
+                   const ztregion_t  *regions,
+                   int                nregions,
+                   ztsaver_t        **savers,
+                   int                nsavers)
 {
-  static const ztwalkhandlers_t handlers =
+  static const ztwalkhandlers_t savehandlers =
   {
-    handler_uchar,
-    handler_ushort,
-    handler_uint,
-    handler_index,
-    handler_version,
-    handler_startstruct,
-    handler_endstruct,
-    handler_startarray,
-    handler_endarray
+    savehandler_uchar,
+    savehandler_ushort,
+    savehandler_uint,
+    savehandler_index,
+    savehandler_version,
+    savehandler_startstruct,
+    savehandler_endstruct,
+    savehandler_startarray,
+    savehandler_endarray,
+    savehandler_custom
   };
 
   ztresult_t  rc;
@@ -356,16 +386,20 @@ ztresult_t zt_save(const ztstruct_t *metastruct,
   assert(filename);
   /* regions may be NULL */
   assert(nregions >= 0);
+  /* savers may be NULL */
+  assert(nsavers >= 0);
 
   state.f = fopen(filename, "wb");
   if (state.f == NULL)
     return ztresult_BAD_FOPEN;
   
   state.indent_is_due = 0;
-  state.depth = 0;
+  state.depth         = 0;
   savestack_setup(&state.stack);
+  state.savers  = savers;
+  state.nsavers = nsavers;
 
-  rc = zt_walk(metastruct, structure, regions, nregions, &handlers, &state);
+  rc = zt_walk(metastruct, structure, regions, nregions, &savehandlers, &state);
   if (rc)
     goto err;
 
