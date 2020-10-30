@@ -16,11 +16,13 @@ project(zerotape VERSION 1.0.0 DESCRIPTION "zerotape" LANGUAGES C)
 option(USE_FORTIFY "Use Fortify" OFF)
 
 if(CMAKE_BUILD_TYPE MATCHES MinSizeRel)
-    # Use -Oz instead of -Os
-    set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG") # should be macOS only!
+    if(APPLE)
+        # Use -Oz instead of -Os
+        set(CMAKE_C_FLAGS_MINSIZEREL "-Oz -DNDEBUG")
+    endif()
 endif()
 
-add_executable(lemon libraries/lemon/lemon.c)
 add_subdirectory(libraries/fortify)
+add_subdirectory(libraries/lemon)
 add_subdirectory(libraries/zerotape)
 add_subdirectory(platform/generic)

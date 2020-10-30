@@ -8,7 +8,6 @@
 
 #include "zt-ast.h"
 
-#include "zt-ast-impl.h"
 
 /* ----------------------------------------------------------------------- */
 
@@ -52,11 +51,11 @@ static ztresult_t ztast_walk_value(ztast_walk_state_t *state,
 {
   switch (value->type)
   {
-  case VAL_INTEGER:
+  case ZTVAL_INTEGER:
     logf((state, "value, integer=%d\n", value->data.integer));
     break;
 
-  case VAL_DECIMAL:
+  case ZTVAL_DECIMAL:
     logf((state, "value, decimal=%d\n", value->data.decimal));
     break;
 
@@ -78,13 +77,13 @@ static ztresult_t ztast_walk_expr(ztast_walk_state_t *state,
 
   switch (expr->type)
   {
-  case EXPR_VALUE:
+  case ZTEXPR_VALUE:
     rc = ztast_walk_value(state, expr->data.value);
     if (rc)
       return rc;
     break;
 
-  case EXPR_ARRAY:
+  case ZTEXPR_ARRAY:
     {
       ztast_array_t     *array;
       int                i;
@@ -106,7 +105,7 @@ static ztresult_t ztast_walk_expr(ztast_walk_state_t *state,
     }
     break;
 
-  case EXPR_SCOPE:
+  case ZTEXPR_SCOPE:
     rc = ztast_walk_statements(state, expr->data.scope->statements);
     if (rc)
       return rc;
@@ -137,7 +136,7 @@ static ztresult_t ztast_walk_statements(ztast_walk_state_t *state,
   {
     switch (st->type)
     {
-    case STMT_ASSIGNMENT:
+    case ZTSTMT_ASSIGNMENT:
       /* FIXME: Bail if types don't match */
       logf((state, "assign, name=%s\n", st->u.assignment->id->name));
       (void) ztast_walk_expr(state, st->u.assignment->expr);

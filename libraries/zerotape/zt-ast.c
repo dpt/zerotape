@@ -8,8 +8,6 @@
 
 #include "zt-ast.h"
 
-#include "zt-ast-impl.h"
-
 /* TODO
  *
  * might want to store the lexerinfo structures in the AST at some point
@@ -63,11 +61,11 @@ static void ztast_destroy_expr(ztast_destroy_state_t *state,
 {
   switch (expr->type)
   {
-  case EXPR_VALUE:
+  case ZTEXPR_VALUE:
     ztast_destroy_value(state, expr->data.value);
     break;
 
-  case EXPR_ARRAY:
+  case ZTEXPR_ARRAY:
     {
       ztast_array_t     *array;
       ztast_arrayelem_t *elem;
@@ -86,7 +84,7 @@ static void ztast_destroy_expr(ztast_destroy_state_t *state,
     }
     break;
 
-  case EXPR_SCOPE:
+  case ZTEXPR_SCOPE:
     ztast_destroy_statements(state, expr->data.scope->statements);
     state->freefn(expr->data.scope);
     break;
@@ -108,7 +106,7 @@ static void ztast_destroy_statements(ztast_destroy_state_t *state,
   {
     switch (st->type)
     {
-    case STMT_ASSIGNMENT:
+    case ZTSTMT_ASSIGNMENT:
       ztast_destroy_expr(state, st->u.assignment->expr);
       state->freefn(st->u.assignment->id);
       state->freefn(st->u.assignment);
@@ -209,7 +207,7 @@ ztast_statement_t *ztast_statement_from_assignment(ztast_t            *ast,
     return NULL;
 
   stmt->next         = NULL;
-  stmt->type         = STMT_ASSIGNMENT;
+  stmt->type         = ZTSTMT_ASSIGNMENT;
   stmt->u.assignment = assignment;
 
 #ifdef ZTAST_LOG
@@ -283,7 +281,7 @@ ztast_value_t *ztast_value_from_integer(ztast_t *ast, int integer)
   if (val == NULL)
     return NULL;
 
-  val->type         = VAL_INTEGER;
+  val->type         = ZTVAL_INTEGER;
   val->data.integer = integer;
 
   return val;
@@ -304,7 +302,7 @@ ztast_value_t *ztast_value_from_decimal(ztast_t *ast, int decimal)
   if (val == NULL)
     return NULL;
 
-  val->type         = VAL_DECIMAL;
+  val->type         = ZTVAL_DECIMAL;
   val->data.decimal = decimal;
 
   return val;
@@ -326,7 +324,7 @@ ztast_expr_t *ztast_expr_from_value(ztast_t *ast, ztast_value_t *value)
   if (expr == NULL)
     return NULL;
 
-  expr->type       = EXPR_VALUE;
+  expr->type       = ZTEXPR_VALUE;
   expr->data.value = value;
 
   return expr;
@@ -348,7 +346,7 @@ ztast_expr_t *ztast_expr_from_array(ztast_t *ast, ztast_array_t *array)
   if (expr == NULL)
     return NULL;
 
-  expr->type       = EXPR_ARRAY;
+  expr->type       = ZTEXPR_ARRAY;
   expr->data.array = array;
 
   return expr;
@@ -370,7 +368,7 @@ ztast_expr_t *ztast_expr_from_scope(ztast_t *ast, ztast_scope_t *scope)
   if (expr == NULL)
     return NULL;
 
-  expr->type       = EXPR_SCOPE;
+  expr->type       = ZTEXPR_SCOPE;
   expr->data.scope = scope;
 
   return expr;

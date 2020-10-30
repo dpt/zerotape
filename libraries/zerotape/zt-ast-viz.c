@@ -7,8 +7,6 @@
 
 #include "zt-ast.h"
 
-#include "zt-ast-impl.h"
-
 /* ----------------------------------------------------------------------- */
 
 typedef struct ztast_viz_state
@@ -36,11 +34,11 @@ static ztresult_t ztast_viz_value(ztast_viz_state_t   *state,
 
   switch (value->type)
   {
-  case VAL_INTEGER:
+  case ZTVAL_INTEGER:
     (void) fprintf(state->file, "\t\"%p\" [label=\"{value|integer|%d}\"];\n", (void *) value, value->data.integer);
     break;
 
-  case VAL_DECIMAL:
+  case ZTVAL_DECIMAL:
     (void) fprintf(state->file, "\t\"%p\" [label=\"{value|decimal|%d}\"];\n", (void *) value, value->data.decimal);
     break;
 
@@ -98,19 +96,19 @@ static ztresult_t ztast_viz_expr(ztast_viz_state_t  *state,
 
   switch (expr->type)
   {
-  case EXPR_VALUE:
+  case ZTEXPR_VALUE:
     (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|value}\"];\n", (void *) expr);
     (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.value);
     rc = ztast_viz_value(state, expr->data.value, depth + 1);
     break;
 
-  case EXPR_ARRAY:
+  case ZTEXPR_ARRAY:
     (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|array}\"];\n", (void *) expr);
     (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.array);
     rc = ztast_viz_array(state, expr->data.array, depth + 1);
     break;
 
-  case EXPR_SCOPE:
+  case ZTEXPR_SCOPE:
     (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|scope}\"];\n", (void *) expr);
     (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.scope->statements);
     rc = ztast_viz_statements(state, expr->data.scope->statements, depth + 1);
@@ -136,7 +134,7 @@ static ztresult_t ztast_viz_statements(ztast_viz_state_t       *state,
   {
     switch (stmt->type)
     {
-    case STMT_ASSIGNMENT:
+    case ZTSTMT_ASSIGNMENT:
       (void) fprintf(state->file, "\t\"%p\" [label=\"{statement|assignment|{<lhs>lhs|<rhs>rhs}}\"];\n", (void *) stmt);
       (void) fprintf(state->file, "\t\"%p\":lhs -> \"%p\";\n", (void *) stmt, (void *) stmt->u.assignment->id);
       (void) ztast_viz_id(state, stmt->u.assignment->id, depth + 1);
