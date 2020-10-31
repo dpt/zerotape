@@ -1,6 +1,6 @@
 # zerotape
 
-zerotape is a C library for loading data structures from, and saving them to, a structured text format. It was built to handle the loading and saving of games in my (The Great Escape in C)[https://github.com/dpt/The-Great-Escape-in-C] project.
+zerotape is a C library for loading data structures from, and saving them to, a structured text format. It was built to handle the loading and saving of games in my [The Great Escape in C](https://github.com/dpt/The-Great-Escape-in-C) project.
 
 To use it, you take the C data structure that you want to preserve and write an additional description of the structure’s fields using `ZT*` macros. You then call the zerotape library functions to load and/or save the structure to and from zerotape format.
 
