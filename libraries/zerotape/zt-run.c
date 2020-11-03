@@ -504,10 +504,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       void               *prawvalue;
 
       assignmentexpr = assignment->expr;
-      if (assignmentexpr->type != ZTEXPR_VALUE)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-
-      prawvalue = PVAL(structure, field->offset);
+      prawvalue      = PVAL(structure, field->offset);
       return loaders[field->typeidx](assignmentexpr, prawvalue, syntax_error);
     }
     else /* expecting an array */
