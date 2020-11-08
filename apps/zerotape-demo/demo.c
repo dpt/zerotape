@@ -34,7 +34,9 @@ typedef struct example
   sub_t         array_of_sub[3];
 
   const char   *static_pointer; /* indexes example_array[] which is static */
+  const char   *static_nullpointer; /* same, but set to NULL */
   const char   *pointer; /* indexes a malloced block */
+  const char   *nullpointer; /* same, but set to NULL */
 
   /* This custom field is not representable with stock zerotape types. It
    * points at one of popular_beat_combo[], but we want to store it as an
@@ -106,10 +108,12 @@ static const ztfield_t example_fields[] =
    * for that is created in example_array_desc and referenced. An integer
    * array index will be output. */
   ZTARRAYIDX_STATIC(static_pointer, example_t, const char *, &example_array_desc),
+  ZTARRAYIDX_STATIC(static_nullpointer, example_t, const char *, &example_array_desc),
   /* 'pointer' points at somewhere in a block that's unknown at compile time, so
    * we assign it an array ID which will be used. An integer array index will be
    * output. */
   ZTARRAYIDX(pointer, example_t, const char *, tenbyte_id),
+  ZTARRAYIDX(nullpointer, example_t, const char *, tenbyte_id),
   ZTCUSTOM(string_in_array, example_t, CUSTOMTYPE_BAND_MEMBER)
 };
 
@@ -211,7 +215,9 @@ int main(int argc, const char *argv[])
   example.array_of_sub[1].value = 45;
   example.array_of_sub[2].value = 46;
   example.static_pointer        = &example_array[2];
+  example.static_nullpointer     = NULL;
   example.pointer               = &tenbyte[5];
+  example.nullpointer            = NULL;
   example.string_in_array       = popular_beat_combo[3];
 
   regions[0].id                 = tenbyte_id;
@@ -259,7 +265,9 @@ int main(int argc, const char *argv[])
   assert(example.array_of_sub[1].value == 45);
   assert(example.array_of_sub[2].value == 46);
   assert(example.static_pointer == &example_array[2]);
+  assert(example.static_nullpointer == NULL);
   assert(example.pointer == &tenbyte[5]);
+  assert(example.nullpointer == NULL);
   assert(example.string_in_array == popular_beat_combo[3]);
 
   return EXIT_SUCCESS;

@@ -1,6 +1,7 @@
 /* zt-walk.c */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -218,11 +219,17 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
         pp    = (const char *) structure + f->offset;
         ptr   = *((const char **) pp);
 
-        if (ptr < base || ptr >= end)
-          return ztresult_BAD_POINTER;
+        if (ptr == NULL)
+        {
+          index = ULONG_MAX;
+        }
+        else
+        {
+          if (ptr < base || ptr >= end)
+            return ztresult_BAD_POINTER;
 
-        index = (ptr - base) / (array->length / array->nelems);
-
+          index = (ptr - base) / (array->length / array->nelems);
+        }
         rc = walkhandlers->index(f->name, index, opaque);
         if (rc)
           return rc;
@@ -255,14 +262,20 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
         array = &regions[r].spec;
         base  = array->base;
         end   = (const char *) array->base + array->length;
-        pp    = (const unsigned char **) rawvalue; /* CHECK */
+        pp    = (const unsigned char **) rawvalue;
         ptr   = *((const char **) pp);
 
-        if (ptr < base || ptr >= end)
-          return ztresult_BAD_POINTER;
+        if (ptr == NULL)
+        {
+          index = ULONG_MAX;
+        }
+        else
+        {
+          if (ptr < base || ptr >= end)
+            return ztresult_BAD_POINTER;
 
-        index = (ptr - base) / (array->length / array->nelems);
-
+          index = (ptr - base) / (array->length / array->nelems);
+        }
         rc = walkhandlers->index(f->name, index, opaque);
         if (rc)
           return rc;

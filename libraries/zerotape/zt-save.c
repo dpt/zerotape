@@ -1,6 +1,7 @@
 /* zt-save.c */
 
 #include <assert.h>
+#include <limits.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -221,7 +222,10 @@ static ztresult_t savehandler_index(const char *name,
                                     void       *opaque)
 {
   savestate_t *state = opaque;
-  emitf(state, "%s = %d;\n", name, index);
+  if (index == ULONG_MAX)
+    emitf(state, "%s = nil;\n", name);
+  else
+    emitf(state, "%s = %d;\n", name, index);
   return ztresult_OK;
 }
 

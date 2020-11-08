@@ -408,20 +408,32 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
     {
       const size_t        elsz = field->array->length / field->array->nelems; /* field->array->length is total size of array */
       const ztast_expr_t *assignmentexpr;
-      int                 index;
       void              **prawvalue;
+      int                 index;
 
       assignmentexpr = assignment->expr;
       if (assignmentexpr->type != ZTEXPR_VALUE)
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-      if (assignmentexpr->data.value->type != ZTVAL_INTEGER)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);
-      index = assignmentexpr->data.value->data.integer;
-      if (index < 0 || index >= field->array->nelems)
-        return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
 
       prawvalue = PVAL(structure, field->offset);
-      *prawvalue = (char *) field->array->base + index * elsz;
+
+      switch (assignmentexpr->data.value->type)
+      {
+      case ZTVAL_INTEGER:
+        index = assignmentexpr->data.value->data.integer;
+        if (index < 0 || index >= field->array->nelems)
+          return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
+
+        *prawvalue = (char *) field->array->base + index * elsz;
+        break;
+
+      case ZTVAL_NIL:
+        *prawvalue = NULL;
+        break;
+
+      default:
+        return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE);
+      }
     }
     else /* expecting an array */
     {
@@ -450,20 +462,32 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       if (field->nelems == 1) /* expecting a single element */
       {
         const ztast_expr_t *assignmentexpr;
-        int                 index;
         void              **prawvalue;
+        int                 index;
 
         assignmentexpr = assignment->expr;
         if (assignmentexpr->type != ZTEXPR_VALUE)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
-        if (assignmentexpr->data.value->type != ZTVAL_INTEGER)
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);
-        index = assignmentexpr->data.value->data.integer;
-        if (index < 0 || index >= array->nelems)
-          return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
 
         prawvalue = PVAL(structure, field->offset);
-        *prawvalue = (char *) array->base + index * elsz;
+
+        switch (assignmentexpr->data.value->type)
+        {
+        case ZTVAL_INTEGER:
+          index = assignmentexpr->data.value->data.integer;
+          if (index < 0 || index >= array->nelems)
+            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
+
+          *prawvalue = (char *) array->base + index * elsz;
+          break;
+
+        case ZTVAL_NIL:
+          *prawvalue = NULL;
+          break;
+
+        default:
+          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE);
+        }
       }
       else /* expecting an array */
       {
