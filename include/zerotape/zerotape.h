@@ -91,7 +91,8 @@ struct ztast_value
   enum ztast_value_type
   {
     ZTVAL_INTEGER,
-    ZTVAL_DECIMAL
+    ZTVAL_DECIMAL,
+    ZTVAL_NIL
   }
   type;
   union ztast_value_data

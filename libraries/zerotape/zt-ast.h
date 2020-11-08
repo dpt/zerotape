@@ -55,6 +55,7 @@ ztast_id_t *ztast_id(ztast_t *ast, const char *name);
 
 ztast_value_t *ztast_value_from_integer(ztast_t *ast, int integer);
 ztast_value_t *ztast_value_from_decimal(ztast_t *ast, int decimal);
+ztast_value_t *ztast_value_nil(ztast_t *ast);
 
 ztast_expr_t *ztast_expr_from_value(ztast_t *ast, ztast_value_t *value);
 ztast_expr_t *ztast_expr_from_array(ztast_t *ast, ztast_array_t *array);
