@@ -45,8 +45,7 @@ typedef enum ztsyntaxerr
   ztsyntx_NEED_INTEGER,
   ztsyntx_NEED_SCOPE,
   ztsyntx_NEED_VALUE,
-  ztsyntx_UNEXPECTED_TYPE,
-  ztsyntx_UNEXPECTED_VALUE,
+  ztsyntx_UNEXPECTED_VALUE_TYPE,
   ztsyntx_UNKNOWN_FIELD,
   ztsyntx_UNKNOWN_REGION,
   ztsyntx_UNSUPPORTED,
@@ -64,8 +63,7 @@ static const char *zt_syntaxstring(ztsyntaxerr_t e)
     /* ztsyntx_NEED_INTEGER */ "integer type required",
     /* ztsyntx_NEED_SCOPE */ "scope required",
     /* ztsyntx_NEED_VALUE */ "value type required", /* e.g. an array or scope received */
-    /* ztsyntx_UNEXPECTED_TYPE */ "non-integer in array",
-    /* ztsyntx_UNEXPECTED_VALUE */ "non-value in array",
+    /* ztsyntx_UNEXPECTED_VALUE_TYPE */ "unexpected value type",
     /* ztsyntx_UNKNOWN_FIELD */ "unknown field",
     /* ztsyntx_UNKNOWN_REGION */ "unknown region",
     /* ztsyntx_UNSUPPORTED */ "unsupported",
@@ -133,7 +131,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
         value = expr->data.value;                                            \
         if (value->type != ZTVAL_INTEGER)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_TYPE);         \
+          return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);            \
         integer = value->data.integer;                                       \
         if (integer < 0 || integer > MAX)                                    \
           return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
@@ -195,7 +193,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
           return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
         value = expr->data.value;                                            \
         if (value->type != ZTVAL_INTEGER)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_TYPE);         \
+          return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);            \
         integer = value->data.integer;                                       \
         if (integer < 0 || integer > MAX)                                    \
           return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
@@ -432,7 +430,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         break;
 
       default:
-        return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE);
+        return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE_TYPE);
       }
     }
     else /* expecting an array */
@@ -486,7 +484,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
           break;
 
         default:
-          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE);
+          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE_TYPE);
         }
       }
       else /* expecting an array */
