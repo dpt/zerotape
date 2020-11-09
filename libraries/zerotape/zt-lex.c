@@ -358,6 +358,49 @@ int ztlex_isinteger(ztlex_t *lex)
   return i;
 }
 
+/* "nil" */
+int ztlex_isnil(ztlex_t *lex)
+{
+  int i = 0;
+  int c;
+
+  c = lex->getC(lex);
+  if (c == EOF)
+    return EOF;
+  if (c != 'n')
+  {
+    lex->ungetC(c, lex);
+    return 0;
+  }
+  lex->lexeme[i++] = c;
+
+  c = lex->getC(lex);
+  if (c != 'i')
+  {
+    if (c != EOF)
+      lex->ungetC(c, lex);
+    goto undo;
+  }
+  lex->lexeme[i++] = c;
+
+  c = lex->getC(lex);
+  if (c != 'l')
+  {
+    if (c != EOF)
+      lex->ungetC(c, lex);
+    goto undo;
+  }
+  lex->lexeme[i++] = c;
+
+  lex->lexeme[i] = '\0';
+  return 3;
+
+undo:
+  while (--i >= 0)
+    lex->ungetC(lex->lexeme[i], lex);
+  return (c == EOF) ? c : 0;
+}
+
 /* [:alpha:_][:alnum:_]* */
 int ztlex_isname(ztlex_t *lex)
 {
@@ -403,6 +446,7 @@ int ztlex_next_token(ztlex_t     *lex,
     { ztlex_ishex,       ZTTOKEN_HEX       },
     { ztlex_isdecimal,   ZTTOKEN_DECIMAL   },
     { ztlex_isinteger,   ZTTOKEN_INT       },
+    { ztlex_isnil,       ZTTOKEN_NIL       },
     { ztlex_isname,      ZTTOKEN_NAME      },
   };
 

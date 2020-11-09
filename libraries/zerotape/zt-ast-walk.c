@@ -59,6 +59,10 @@ static ztresult_t ztast_walk_value(ztast_walk_state_t *state,
     logf((state, "value, decimal=%d\n", value->data.decimal));
     break;
 
+  case ZTVAL_NIL:
+    logf((state, "nil\n"));
+    break;
+
   default:
     assert(0);
   }

@@ -64,6 +64,7 @@ id(A)           ::= NAME(B). { A = ztast_id(pParse->ast, B->lexeme); }
 %type value { ztast_value_t * }
 value(A)        ::= term(B).    { A = ztast_value_from_integer(pParse->ast, B); }
 value(A)        ::= decimal(B). { A = ztast_value_from_decimal(pParse->ast, B); }
+value(A)        ::= NIL.        { A = ztast_value_nil(pParse->ast); }
 
 %type term { int }
 term(A)         ::= term(B) PLUS term(C).   { A = B + C; }

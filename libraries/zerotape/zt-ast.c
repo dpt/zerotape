@@ -308,6 +308,26 @@ ztast_value_t *ztast_value_from_decimal(ztast_t *ast, int decimal)
   return val;
 }
 
+ztast_value_t *ztast_value_nil(ztast_t *ast)
+{
+  ztast_value_t *val;
+
+  assert(ast);
+
+#ifdef ZTAST_LOG
+  if (ast->logfn)
+    ast->logfn("ztast_value_nil\n");
+#endif
+
+  val = ZTAST_MALLOC(sizeof(*val));
+  if (val == NULL)
+    return NULL;
+
+  val->type = ZTVAL_NIL;
+
+  return val;
+}
+
 ztast_expr_t *ztast_expr_from_value(ztast_t *ast, ztast_value_t *value)
 {
   ztast_expr_t *expr;

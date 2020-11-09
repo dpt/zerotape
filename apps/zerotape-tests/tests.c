@@ -31,7 +31,7 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   return rc;
 }
 
-int main(int argc, const char * argv[])
+int main(int argc, const char *argv[])
 {
   ztresult_t rc;
 
@@ -39,6 +39,8 @@ int main(int argc, const char * argv[])
 
   ztlex_selftest();
 
+  ztlex_stringtest("");
+  ztlex_stringtest(" ");
   ztlex_stringtest("x = 0;");
   ztlex_stringtest("y = [ 1 ];");
   ztlex_stringtest("()*+,-/:;=[]{}");
@@ -47,6 +49,9 @@ int main(int argc, const char * argv[])
   ztlex_stringtest("0xFF");
   ztlex_stringtest("255");
   ztlex_stringtest("potato");
+  ztlex_stringtest("nil");
+  ztlex_stringtest("1nil2");
+  ztlex_stringtest(" 1 nil 2 ");
 
   rc = parse_and_dump_dot("test.zt", "ztast.dot");
 

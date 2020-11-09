@@ -51,6 +51,7 @@ ixlexfn_t ztlex_isdollarhex;
 ixlexfn_t ztlex_ishex;
 ixlexfn_t ztlex_isdecimal;
 ixlexfn_t ztlex_isinteger;
+ixlexfn_t ztlex_isnil;
 ixlexfn_t ztlex_isname;
 
 /* ----------------------------------------------------------------------- */

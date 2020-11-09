@@ -42,6 +42,10 @@ static ztresult_t ztast_viz_value(ztast_viz_state_t   *state,
     (void) fprintf(state->file, "\t\"%p\" [label=\"{value|decimal|%d}\"];\n", (void *) value, value->data.decimal);
     break;
 
+  case ZTVAL_NIL:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|nil}\"];\n", (void *) value);
+    break;
+
   default:
     assert(0);
   }
