@@ -17,7 +17,12 @@
 
 static int ztlex_fgetc(ztlex_t *lex)
 {
-  int c = fgetc(lex->file);
+  int c;
+
+  if (lex->ungottenptr > lex->ungotten)
+    c = *--lex->ungottenptr;
+  else
+    c = fgetc(lex->file);
 
   if (c == '\n')
   {
@@ -48,7 +53,8 @@ static void ztlex_fungetc(int c, ztlex_t *lex)
     lex->column--;
   }
 
-  ungetc(c, lex->file);
+  if (lex->ungottenptr - lex->ungotten < MAXUNGOTTEN)
+    *lex->ungottenptr++ = c;
 }
 
 ztlex_t *ztlex_from_file(ztlex_mallocfn_t *mallocfn,
@@ -68,18 +74,20 @@ ztlex_t *ztlex_from_file(ztlex_mallocfn_t *mallocfn,
     return NULL;
   }
 
-  lex->string     = NULL;
-  lex->length     = 0;
-  lex->index      = 0;
+  lex->ungottenptr = &lex->ungotten[0];
 
-  lex->line       = 1;
-  lex->column     = 1;
-  lex->prevcolumn = -1;
+  lex->string      = NULL;
+  lex->length      = 0;
+  lex->index       = 0;
 
-  lex->getC       = ztlex_fgetc;
-  lex->ungetC     = ztlex_fungetc;
+  lex->line        = 1;
+  lex->column      = 1;
+  lex->prevcolumn  = -1;
 
-  lex->freefn     = freefn;
+  lex->getC        = ztlex_fgetc;
+  lex->ungetC      = ztlex_fungetc;
+
+  lex->freefn      = freefn;
 
   return lex;
 }
@@ -143,20 +151,21 @@ ztlex_t *ztlex_from_string(ztlex_mallocfn_t *mallocfn,
   if (lex == NULL)
     return NULL;
 
-  lex->file       = NULL;
+  lex->file        = NULL;
+  lex->ungottenptr = NULL;
 
-  lex->string     = string; /* FIXME: Copy string */
-  lex->length     = strlen(string);
-  lex->index      = 0;
+  lex->string      = string; /* FIXME: Copy string */
+  lex->length      = strlen(string);
+  lex->index       = 0;
 
-  lex->line       = 1;
-  lex->column     = 1;
-  lex->prevcolumn = -1;
+  lex->line        = 1;
+  lex->column      = 1;
+  lex->prevcolumn  = -1;
 
-  lex->getC       = ztlex_sgetc;
-  lex->ungetC     = ztlex_sungetc;
+  lex->getC        = ztlex_sgetc;
+  lex->ungetC      = ztlex_sungetc;
 
-  lex->freefn     = freefn;
+  lex->freefn      = freefn;
 
   return lex;
 }

@@ -11,9 +11,16 @@
 
 /* ----------------------------------------------------------------------- */
 
+#define MAXUNGOTTEN MAXLEXEME
+
+/* ----------------------------------------------------------------------- */
+
 struct ztlex
 {
   FILE           *file;
+  
+  char           *ungottenptr;
+  char            ungotten[MAXUNGOTTEN]; /* ungetc buffer */
 
   const char     *string;
   size_t          length;
