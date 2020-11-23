@@ -191,7 +191,11 @@ ztresult_t bandmember_loader(const ztast_expr_t *expr,
 
 int main(int argc, const char *argv[])
 {
-  static const char testfile[] = "demo.zt";
+#ifdef __riscos
+  static const char testfile[] = "demo_zt";
+#else
+  static const char testfile[] = "demo/zt";
+#endif
 
   ztresult_t  rc;
   char       *tenbyte;

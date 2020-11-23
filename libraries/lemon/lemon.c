@@ -35,6 +35,8 @@ extern int access(const char *path, int mode);
 #ifdef __cplusplus
 }
 #endif
+#elif __riscos
+static int access(const char *path, int mode) { return 0; }
 #else
 #include <unistd.h>
 #endif
@@ -3513,7 +3515,7 @@ void ReportOutput(struct lemon *lemp)
 }
 
 /* Search for the file "name" which is in the same directory as
-** the exacutable */
+** the executable */
 PRIVATE char *pathsearch(char *argv0, char *name, int modemask)
 {
   const char *pathlist;
