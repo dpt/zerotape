@@ -4,9 +4,12 @@
 #ifndef ZT_GRAMX_H
 #define ZT_GRAMX_H
 
+#include <stdio.h>
+
 void *ztparseAlloc(void *(*mallocProc)(size_t), ztparser_t *pParse);
 void ztparse(void *yyp, int yymajor, ztlexinf_t *yyminor);
 void ztparseFree(void *p, void (*freeProc)(void *));
+void ztparseTrace(FILE *TraceFILE, char *zTracePrompt);
 
 #endif /* ZT_GRAMX_H */
 
