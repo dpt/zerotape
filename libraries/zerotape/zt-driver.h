@@ -1,7 +1,7 @@
-/* zt-parser.h */
+/* zt-driver.h */
 
-#ifndef ZT_PARSER_H
-#define ZT_PARSER_H
+#ifndef ZT_DRIVER_H
+#define ZT_DRIVER_H
 
 /* ----------------------------------------------------------------------- */
 
@@ -10,20 +10,19 @@
 
 /* ----------------------------------------------------------------------- */
 
-typedef struct ztparser
+typedef struct ztparseinfo
 {
-  ztlex_t *lexer;
   ztast_t *ast;
   int      syntax_error;
 }
-ztparser_t;
+ztparseinfo_t;
 
 /* ----------------------------------------------------------------------- */
 
-ztast_t *ztparser_from_file(const char *filename);
+ztast_t *ztast_from_file(const char *filename);
 
 /* ----------------------------------------------------------------------- */
 
-#endif /* ZT_PARSER_H */
+#endif /* ZT_DRIVER_H */
 
 /* vim: set ts=8 sts=2 sw=2 et: */

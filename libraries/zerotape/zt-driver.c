@@ -1,4 +1,4 @@
-/* zt-parser.c */
+/* zt-driver.c */
 
 #include <assert.h>
 #include <ctype.h>
@@ -12,14 +12,34 @@
 #include "zt-lex.h"
 
 #include "zt-ast.h"
+#include "zt-slab-alloc.h"
 #include "zt-gram.h"
-#include "zt-parser.h"
+#include "zt-driver.h"
 #include "zt-gramx.h"
 
 /* ----------------------------------------------------------------------- */
 
-#define parser_malloc malloc
-#define parser_free   free
+static void *lexer_malloc(size_t n)
+{
+  printf("lexer allocated %lu\n", n);
+  return malloc(n);
+}
+
+static void lexer_free(void *p)
+{
+  free(p);
+}
+
+static void *parser_malloc(size_t n)
+{
+  printf("parser allocated %lu\n", n);
+  return malloc(n);
+}
+
+static void parser_free(void *p)
+{
+  free(p);
+}
 
 /* ----------------------------------------------------------------------- */
 
@@ -34,41 +54,47 @@ static void ztparser_log(const char *fmt, ...)
 
 /* ----------------------------------------------------------------------- */
 
-static void ztparser_init(ztparser_t *ps, ztlex_t *lex, ztast_t *ast)
-{
-  ps->lexer        = lex;
-  ps->ast          = ast;
-  ps->syntax_error = 0;
-}
-
-ztast_t *ztparser_from_file(const char *filename)
+ztast_t *ztast_from_file(const char *filename)
 {
   ztlex_t          *lexer;
-  ztparser_t        state;
+  ztparseinfo_t     parseinfo;
   void             *parser;
   ztast_t          *ast;
   ztlextok_t        token;
   const ztlexinf_t *info;
+  ztslaballoc_t    *astslaballoc;
 
-  lexer = ztlex_from_file(parser_malloc, parser_free, filename);
+  lexer = ztlex_from_file(lexer_malloc, lexer_free, filename);
   if (lexer == NULL)
     return NULL;
 
-  parser = ztparseAlloc(parser_malloc, &state);
-  ast = ztast_create(parser_malloc, parser_free, ztparser_log);
-  ztparser_init(&state, lexer, ast);
+  parser = ztparseAlloc(parser_malloc, &parseinfo);
+  astslaballoc = ztslaballoc_create();
+  if (astslaballoc == NULL)
+  {
+    ztparseFree(parser, parser_free);
+    return NULL;
+  }
+  ast = ztast_create(ztslaballoc, ztslabfree, astslaballoc, ztparser_log);
+  if (ast == NULL)
+  {
+    goto stop;
+  }
+  parseinfo.ast = ast;
+  parseinfo.syntax_error = NULL;
   while (ztlex_next_token(lexer, &token, &info))
   {
     ztparse(parser, token, (ztlexinf_t *) info); /* cast away const for interface */
-    if (state.syntax_error)
+    if (parseinfo.syntax_error)
       goto stop;
   }
   ztparse(parser, 0, (ztlexinf_t *) info);
 
 stop:
   ztparseFree(parser, parser_free);
+  ztslaballoc_spew(astslaballoc);
   ztlex_destroy(lexer);
-  return (state.syntax_error) ? NULL : ast;
+  return (parseinfo.syntax_error) ? NULL : ast;
 }
 
 /* ----------------------------------------------------------------------- */

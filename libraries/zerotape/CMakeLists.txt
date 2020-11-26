@@ -19,7 +19,7 @@ target_include_directories(zerotape PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_
 # Header (so it appears in Xcode)
 target_sources(zerotape PRIVATE ${CMAKE_SOURCE_DIR}/include/zerotape/zerotape.h)
 # Ordinary sources
-target_sources(zerotape PRIVATE zt-ast-viz.c zt-ast-walk.c zt-ast.c zt-ast.h zt-gramx.h zt-lex-impl.h zt-lex-test.c zt-lex-test.h zt-lex.c zt-lex.h zt-load.c zt-parser.c zt-parser.h zt-run.c zt-run.h zt-save.c zt-walk.c zt-walk.h) # add regular sources
+target_sources(zerotape PRIVATE zt-ast-viz.c zt-ast-walk.c zt-ast.c zt-ast.h zt-gramx.h zt-lex-impl.h zt-lex-test.c zt-lex-test.h zt-lex.c zt-lex.h zt-load.c zt-driver.c zt-driver.h zt-run.c zt-run.h zt-save.c zt-walk.c zt-walk.h zt-slab-alloc.c zt-slab-alloc.h) # add regular sources
 # Generated sources
 target_sources(zerotape PRIVATE zt-gram.c zt-gram.h)
 

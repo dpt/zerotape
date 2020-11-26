@@ -6,7 +6,7 @@
 #include "zerotape/zerotape.h"
 
 #include "zt-ast.h"
-#include "zt-parser.h"
+#include "zt-driver.h"
 #include "zt-run.h"
 
 ztresult_t zt_load(const ztstruct_t  *meta,
@@ -27,7 +27,7 @@ ztresult_t zt_load(const ztstruct_t  *meta,
   /* regions may be NULL */
   assert(nregions >= 0);
 
-  ast = ztparser_from_file(filename);
+  ast = ztast_from_file(filename);
   if (ast == NULL)
     return ztresult_PARSE_FAIL;
 
@@ -41,6 +41,8 @@ ztresult_t zt_load(const ztstruct_t  *meta,
                       &syntax_error);
   if (rc != ztresult_OK)
     puts(syntax_error); // FIXME
+
+  ztast_destroy(ast);
 
   return rc;
 }

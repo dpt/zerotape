@@ -13,14 +13,14 @@
 
 %default_type { ztlextok_t }
 
-%extra_context { ztparser_t *pParse }
+%extra_context { ztparseinfo_t *info }
 
 %syntax_error {
   if (TOKEN)
     fprintf(stderr, "error: syntax error at line %d column %d\n", TOKEN->line, TOKEN->column);
   else
     fprintf(stderr, "error: syntax error\n");
-  pParse->syntax_error = 1;
+  info->syntax_error = 1;
 }
 
 %stack_overflow {
@@ -37,7 +37,7 @@
 #include "fortify/fortify.h"
 
 #include "zt-ast.h"
-#include "zt-parser.h"
+#include "zt-driver.h"
 #include "zt-lex.h"
 }
 
@@ -45,26 +45,26 @@
 %left TIMES DIVIDE.
 
 %type program { ztast_program_t * }
-program(A)      ::= .                 { A = ztast_program(pParse->ast, NULL); }
-program(A)      ::= statementlist(B). { A = ztast_program(pParse->ast, B); }
+program(A)      ::= .                 { A = ztast_program(info->ast, NULL); }
+program(A)      ::= statementlist(B). { A = ztast_program(info->ast, B); }
 
 %type statementlist { ztast_statement_t * }
-statementlist(A) ::= statementlist(A) statement(B). { ztast_statement_append(pParse->ast, A, B); }
+statementlist(A) ::= statementlist(A) statement(B). { ztast_statement_append(info->ast, A, B); }
 statementlist   ::= statement.
 
 %type statement { ztast_statement_t * }
-statement(A)    ::= assignment(B). { A = ztast_statement_from_assignment(pParse->ast, B); }
+statement(A)    ::= assignment(B). { A = ztast_statement_from_assignment(info->ast, B); }
 
 %type assignment { ztast_assignment_t * }
-assignment(A)   ::= id(B) EQUALS expr(C) SEMICOLON. { A = ztast_assignment(pParse->ast, B, C); }
+assignment(A)   ::= id(B) EQUALS expr(C) SEMICOLON. { A = ztast_assignment(info->ast, B, C); }
 
 %type id { ztast_id_t * }
-id(A)           ::= NAME(B). { A = ztast_id(pParse->ast, B->lexeme); }
+id(A)           ::= NAME(B). { A = ztast_id(info->ast, B->lexeme); }
 
 %type value { ztast_value_t * }
-value(A)        ::= term(B).    { A = ztast_value_from_integer(pParse->ast, B); }
-value(A)        ::= decimal(B). { A = ztast_value_from_decimal(pParse->ast, B); }
-value(A)        ::= NIL.        { A = ztast_value_nil(pParse->ast); }
+value(A)        ::= term(B).    { A = ztast_value_from_integer(info->ast, B); }
+value(A)        ::= decimal(B). { A = ztast_value_from_decimal(info->ast, B); }
+value(A)        ::= NIL.        { A = ztast_value_nil(info->ast); }
 
 %type term { int }
 term(A)         ::= term(B) PLUS term(C).   { A = B + C; }
@@ -83,23 +83,23 @@ integer(A)      ::= HEX(B).       { A = (int) strtol(B->lexeme + 2, NULL, 16); }
 decimal(A)      ::= DECIMAL(B).   { A = (int)(atof(B->lexeme) * 100); }
 
 %type expr { ztast_expr_t * }
-expr(A)         ::= value(B). { A = ztast_expr_from_value(pParse->ast, B); }
-expr(A)         ::= array(B). { A = ztast_expr_from_array(pParse->ast, B); }
-expr(A)         ::= scope(B). { A = ztast_expr_from_scope(pParse->ast, B); }
+expr(A)         ::= value(B). { A = ztast_expr_from_value(info->ast, B); }
+expr(A)         ::= array(B). { A = ztast_expr_from_array(info->ast, B); }
+expr(A)         ::= scope(B). { A = ztast_expr_from_scope(info->ast, B); }
 
 %type array { ztast_array_t * }
-array(A)        ::= LSQBRA RSQBRA.                  { A = ztast_array(pParse->ast, NULL); }
-array(A)        ::= LSQBRA arrayelemlist(B) RSQBRA. { A = ztast_array(pParse->ast, B); }
+array(A)        ::= LSQBRA RSQBRA.                  { A = ztast_array(info->ast, NULL); }
+array(A)        ::= LSQBRA arrayelemlist(B) RSQBRA. { A = ztast_array(info->ast, B); }
 
 // Note: This permits mixed formats for arrays which may not be expected. e.g. What does "jim = [ 10:$FF, 2 ];" mean?
 %type arrayelemlist { ztast_arrayelem_t * }
-arrayelemlist(A) ::= arrayelemlist(A) COMMA arrayelem(B). { ztast_arrayelem_append(pParse->ast, A, B); }
+arrayelemlist(A) ::= arrayelemlist(A) COMMA arrayelem(B). { ztast_arrayelem_append(info->ast, A, B); }
 arrayelemlist   ::= arrayelem.
 
 %type arrayelem { ztast_arrayelem_t * }
-arrayelem(A)    ::= expr(B).                  { A = ztast_arrayelem(pParse->ast, -1, B); }
-arrayelem(A)    ::= integer(B) COLON expr(C). { A = ztast_arrayelem(pParse->ast, B, C); }
+arrayelem(A)    ::= expr(B).                  { A = ztast_arrayelem(info->ast, -1, B); }
+arrayelem(A)    ::= integer(B) COLON expr(C). { A = ztast_arrayelem(info->ast, B, C); }
 
 %type scope { ztast_scope_t * }
-scope(A)        ::= LBRACE RBRACE.                  { A = ztast_scope(pParse->ast, NULL); }
-scope(A)        ::= LBRACE statementlist(B) RBRACE. { A = ztast_scope(pParse->ast, B); }
+scope(A)        ::= LBRACE RBRACE.                  { A = ztast_scope(info->ast, NULL); }
+scope(A)        ::= LBRACE statementlist(B) RBRACE. { A = ztast_scope(info->ast, B); }

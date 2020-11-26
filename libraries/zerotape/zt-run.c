@@ -9,7 +9,7 @@
 
 #include "zerotape/zerotape.h"
 
-#include "zt-parser.h"
+#include "zt-driver.h"
 #include "zt-ast.h"
 
 #include "zt-run.h"

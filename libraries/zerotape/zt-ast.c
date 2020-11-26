@@ -15,18 +15,19 @@
 
 /* ----------------------------------------------------------------------- */
 
-#define ZTAST_MALLOC(SZ) ast->mallocfn(SZ)
-#define ZTAST_FREE(P)    ast->freefn(P)
+#define ZTAST_MALLOC(SZ) ast->mallocfn(SZ, ast->opaque)
+#define ZTAST_FREE(P)    do { if (ast->freefn) ast->freefn(P, ast->opaque); } while (0)
 
 /* ----------------------------------------------------------------------- */
 
 ztast_t *ztast_create(ztast_mallocfn_t *mallocfn,
                       ztast_freefn_t   *freefn,
+                      void             *opaque,
                       ztast_logfn_t    *logfn)
 {
   ztast_t *ast;
 
-  ast = mallocfn(sizeof(*ast));
+  ast = mallocfn(sizeof(*ast), opaque);
   if (ast == NULL)
     return NULL;
 
@@ -34,6 +35,8 @@ ztast_t *ztast_create(ztast_mallocfn_t *mallocfn,
 
   ast->mallocfn = mallocfn;
   ast->freefn   = freefn;
+  ast->opaque   = opaque;
+
 #ifdef ZTAST_LOG
   ast->logfn    = logfn;
 #endif
@@ -41,28 +44,22 @@ ztast_t *ztast_create(ztast_mallocfn_t *mallocfn,
   return ast;
 }
 
-typedef struct ztast_destroy_state
-{
-  void (*freefn)(void *);
-}
-ztast_destroy_state_t;
+static void ztast_destroy_statements(ztast_t           *ast,
+                                     ztast_statement_t *statements);
 
-static void ztast_destroy_statements(ztast_destroy_state_t *state,
-                                     ztast_statement_t     *statements);
-
-static void ztast_destroy_value(ztast_destroy_state_t *state,
-                                ztast_value_t         *value)
+static void ztast_destroy_value(ztast_t       *ast,
+                                ztast_value_t *value)
 {
-  state->freefn(value);
+  ZTAST_FREE(value);
 }
 
-static void ztast_destroy_expr(ztast_destroy_state_t *state,
-                               ztast_expr_t          *expr)
+static void ztast_destroy_expr(ztast_t      *ast,
+                               ztast_expr_t *expr)
 {
   switch (expr->type)
   {
   case ZTEXPR_VALUE:
-    ztast_destroy_value(state, expr->data.value);
+    ztast_destroy_value(ast, expr->data.value);
     break;
 
   case ZTEXPR_ARRAY:
@@ -76,25 +73,25 @@ static void ztast_destroy_expr(ztast_destroy_state_t *state,
       array = expr->data.array;
       for (elem = array->elems; elem; elem = next)
       {
-        ztast_destroy_expr(state, elem->expr);
+        ztast_destroy_expr(ast, elem->expr);
         next = elem->next;
-        state->freefn(elem);
+        ZTAST_FREE(elem);
       }
-      state->freefn(array);
+      ZTAST_FREE(array);
     }
     break;
 
   case ZTEXPR_SCOPE:
-    ztast_destroy_statements(state, expr->data.scope->statements);
-    state->freefn(expr->data.scope);
+    ztast_destroy_statements(ast, expr->data.scope->statements);
+    ZTAST_FREE(expr->data.scope);
     break;
   }
 
-  state->freefn(expr);
+  ZTAST_FREE(expr);
 }
 
-static void ztast_destroy_statements(ztast_destroy_state_t *state,
-                                     ztast_statement_t     *statements)
+static void ztast_destroy_statements(ztast_t           *ast,
+                                     ztast_statement_t *statements)
 {
   ztast_statement_t *st;
   ztast_statement_t *next;
@@ -107,9 +104,9 @@ static void ztast_destroy_statements(ztast_destroy_state_t *state,
     switch (st->type)
     {
     case ZTSTMT_ASSIGNMENT:
-      ztast_destroy_expr(state, st->u.assignment->expr);
-      state->freefn(st->u.assignment->id);
-      state->freefn(st->u.assignment);
+      ztast_destroy_expr(ast, st->u.assignment->expr);
+      ZTAST_FREE(st->u.assignment->id);
+      ZTAST_FREE(st->u.assignment);
       break;
 
     default:
@@ -117,20 +114,16 @@ static void ztast_destroy_statements(ztast_destroy_state_t *state,
       break;
     }
     next = st->next;
-    state->freefn(st);
+    ZTAST_FREE(st);
   }
 }
 
 void ztast_destroy(ztast_t *ast)
 {
-  ztast_destroy_state_t state;
-
   if (ast == NULL)
     return;
 
-  state.freefn = ast->freefn;
-
-  ztast_destroy_statements(&state, ast->program->statements);
+  ztast_destroy_statements(ast, ast->program->statements);
 
   ZTAST_FREE(ast->program);
   ZTAST_FREE(ast);

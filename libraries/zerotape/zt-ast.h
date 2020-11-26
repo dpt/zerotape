@@ -9,8 +9,9 @@
 
 /* ----------------------------------------------------------------------- */
 
-typedef void *(ztast_mallocfn_t)(size_t);
-typedef void (ztast_freefn_t)(void *);
+typedef void *(ztast_mallocfn_t)(size_t, void *opaque);
+typedef void (ztast_freefn_t)(void *, void *opaque);
+
 typedef void (ztast_logfn_t)(const char *fmt, ...);
 
 /* ----------------------------------------------------------------------- */
@@ -19,6 +20,7 @@ typedef struct ztast ztast_t;
 
 ztast_t *ztast_create(ztast_mallocfn_t *mallocfn,
                       ztast_freefn_t   *freefn,
+                      void             *opaque,
                       ztast_logfn_t    *logfn);
 void ztast_destroy(ztast_t *ast);
 
@@ -32,6 +34,8 @@ struct ztast
   /* virtual functions */
   ztast_mallocfn_t *mallocfn;
   ztast_freefn_t   *freefn;
+  void             *opaque;
+  
 #ifdef ZTAST_LOG
   ztast_logfn_t    *logfn;
 #endif

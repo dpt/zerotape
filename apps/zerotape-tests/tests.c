@@ -5,7 +5,7 @@
 #include "fortify/fortify.h"
 
 #include "../../libraries/zerotape/zt-ast.h"
-#include "../../libraries/zerotape/zt-parser.h"
+#include "../../libraries/zerotape/zt-driver.h"
 #include "../../libraries/zerotape/zt-lex-test.h"
 
 static ztresult_t parse_and_dump_dot(const char *filename,
@@ -14,7 +14,7 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   ztresult_t rc;
   ztast_t   *ast;
 
-  ast = ztparser_from_file(filename);
+  ast = ztast_from_file(filename);
   if (ast == NULL)
     return ztresult_NO_PROGRAM;
 

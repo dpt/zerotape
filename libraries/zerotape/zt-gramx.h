@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 
-void *ztparseAlloc(void *(*mallocProc)(size_t), ztparser_t *pParse);
+void *ztparseAlloc(void *(*mallocProc)(size_t), ztparseinfo_t *info);
 void ztparse(void *yyp, int yymajor, ztlexinf_t *yyminor);
 void ztparseFree(void *p, void (*freeProc)(void *));
 void ztparseTrace(FILE *TraceFILE, char *zTracePrompt);
