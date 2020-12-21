@@ -17,14 +17,13 @@
 
 %syntax_error {
   if (TOKEN)
-    fprintf(stderr, "error: syntax error at line %d column %d\n", TOKEN->line, TOKEN->column);
+    sprintf(info->errbuf, "syntax error at line %d column %d", TOKEN->line, TOKEN->column);
   else
-    fprintf(stderr, "error: syntax error\n");
-  info->syntax_error = 1;
+    sprintf(info->errbuf, "syntax error");
 }
 
 %stack_overflow {
-  fprintf(stderr, "error: parser stack overflow\n");
+  sprintf(info->errbuf, "parser stack overflow");
 }
 
 %name ztparse
@@ -49,8 +48,8 @@ program(A)      ::= .                 { A = ztast_program(info->ast, NULL); }
 program(A)      ::= statementlist(B). { A = ztast_program(info->ast, B); }
 
 %type statementlist { ztast_statement_t * }
-statementlist(A) ::= statementlist(A) statement(B). { ztast_statement_append(info->ast, A, B); }
-statementlist   ::= statement.
+statementlist(A)  ::= statementlist(A) statement(B). { ztast_statement_append(info->ast, A, B); }
+statementlist     ::= statement.
 
 %type statement { ztast_statement_t * }
 statement(A)    ::= assignment(B). { A = ztast_statement_from_assignment(info->ast, B); }
@@ -60,6 +59,14 @@ assignment(A)   ::= id(B) EQUALS expr(C) SEMICOLON. { A = ztast_assignment(info-
 
 %type id { ztast_id_t * }
 id(A)           ::= NAME(B). { A = ztast_id(info->ast, B->lexeme); }
+
+// While we allow expressions to be values, we don't allow them to be arrays of
+// values, just arrays of int, scope, or a single scope.
+%type expr { ztast_expr_t * }
+expr(A)         ::= value(B).      { A = ztast_expr_from_value(info->ast, B); }
+expr(A)         ::= scope(B).      { A = ztast_expr_from_scope(info->ast, B); }
+expr(A)         ::= intarray(B).   { A = ztast_expr_from_intarray(info->ast, B); }
+expr(A)         ::= scopearray(B). { A = ztast_expr_from_scopearray(info->ast, B); }
 
 %type value { ztast_value_t * }
 value(A)        ::= term(B).    { A = ztast_value_from_integer(info->ast, B); }
@@ -82,24 +89,21 @@ integer(A)      ::= HEX(B).       { A = (int) strtol(B->lexeme + 2, NULL, 16); }
 %type decimal { int }
 decimal(A)      ::= DECIMAL(B).   { A = (int)(atof(B->lexeme) * 100); }
 
-%type expr { ztast_expr_t * }
-expr(A)         ::= value(B). { A = ztast_expr_from_value(info->ast, B); }
-expr(A)         ::= array(B). { A = ztast_expr_from_array(info->ast, B); }
-expr(A)         ::= scope(B). { A = ztast_expr_from_scope(info->ast, B); }
-
-%type array { ztast_array_t * }
-array(A)        ::= LSQBRA RSQBRA.                  { A = ztast_array(info->ast, NULL); }
-array(A)        ::= LSQBRA arrayelemlist(B) RSQBRA. { A = ztast_array(info->ast, B); }
-
-// Note: This permits mixed formats for arrays which may not be expected. e.g. What does "jim = [ 10:$FF, 2 ];" mean?
-%type arrayelemlist { ztast_arrayelem_t * }
-arrayelemlist(A) ::= arrayelemlist(A) COMMA arrayelem(B). { ztast_arrayelem_append(info->ast, A, B); }
-arrayelemlist   ::= arrayelem.
-
-%type arrayelem { ztast_arrayelem_t * }
-arrayelem(A)    ::= expr(B).                  { A = ztast_arrayelem(info->ast, -1, B); }
-arrayelem(A)    ::= integer(B) COLON expr(C). { A = ztast_arrayelem(info->ast, B, C); }
-
 %type scope { ztast_scope_t * }
 scope(A)        ::= LBRACE RBRACE.                  { A = ztast_scope(info->ast, NULL); }
 scope(A)        ::= LBRACE statementlist(B) RBRACE. { A = ztast_scope(info->ast, B); }
+
+%type intarray { ztast_intarray_t * }
+intarray(A)     ::= LSQBRA RSQBRA.                  { A = ztast_intarray(info->ast, NULL); }
+intarray(A)     ::= LSQBRA intarrayinner(B) RSQBRA. { A = ztast_intarray(info->ast, B); }
+
+%type intarrayinner { ztast_intarrayinner_t * }
+intarrayinner(A) ::= term(B). { A = ztast_intarrayinner_append(info->ast, NULL, B); }
+intarrayinner(A) ::= intarrayinner(A) COMMA term(B). { A = ztast_intarrayinner_append(info->ast, A, B); }
+
+%type scopearray { ztast_scopearray_t * }
+scopearray(A)   ::= LSQBRA scopearrayinner(B) RSQBRA. { A = ztast_scopearray(info->ast, B); }
+
+%type scopearrayinner { ztast_scopearrayinner_t * }
+scopearrayinner(A) ::= scope(B). { A = ztast_scopearrayinner_append(info->ast, NULL, B); }
+scopearrayinner(A) ::= scopearrayinner(A) COMMA scope(B). { A = ztast_scopearrayinner_append(info->ast, A, B); }

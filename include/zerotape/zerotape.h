@@ -1,4 +1,9 @@
-/* zerotape.h */
+/* zerotape.h
+ *
+ * zerotape serialisation library
+ *
+ * Copyright (c) David Thomas, 2020-2021
+ */
 
 #ifndef ZEROTAPE_H
 #define ZEROTAPE_H
@@ -9,6 +14,10 @@ extern "C" {
 #else
 #include <stddef.h>
 #endif
+
+/* ----------------------------------------------------------------------- */
+
+#define ZEROTAPE_VERSION "0.0.2"
 
 /* ----------------------------------------------------------------------- */
 
@@ -43,12 +52,13 @@ typedef struct ztast_program ztast_program_t;
 typedef struct ztast_statement ztast_statement_t;
 typedef struct ztast_assignment ztast_assignment_t;
 typedef struct ztast_id ztast_id_t;
-typedef struct ztast_value ztast_value_t;
 typedef struct ztast_expr ztast_expr_t;
-typedef struct ztast_array ztast_array_t;
-typedef int ztast_arrayindex_t;
-typedef struct ztast_arrayelem ztast_arrayelem_t;
+typedef struct ztast_value ztast_value_t;
 typedef struct ztast_scope ztast_scope_t;
+typedef struct ztast_intarray ztast_intarray_t;
+typedef struct ztast_intarrayinner ztast_intarrayinner_t;
+typedef struct ztast_scopearray ztast_scopearray_t;
+typedef struct ztast_scopearrayinner ztast_scopearrayinner_t;
 
 /** A program is a list of statements. */
 struct ztast_program
@@ -85,7 +95,28 @@ struct ztast_id
   char name[1];
 };
 
-/** A value can be an integer or a decimal. */
+/** An expression can be a value, an integer array or a scope array. */
+struct ztast_expr
+{
+  enum ztast_expr_type
+  {
+    ZTEXPR_VALUE,
+    ZTEXPR_SCOPE,
+    ZTEXPR_INTARRAY,
+    ZTEXPR_SCOPEARRAY
+  }
+  type;
+  union ztast_expr_data
+  {
+    struct ztast_value *value;
+    struct ztast_scope *scope;
+    struct ztast_intarray *intarray;
+    struct ztast_scopearray *scopearray;
+  }
+  data;
+};
+
+/** A value can be an integer, a decimal, or nil. */
 struct ztast_value
 {
   enum ztast_value_type
@@ -103,43 +134,38 @@ struct ztast_value
   data;
 };
 
-/** An expression can be a value, an array or a scope. */
-struct ztast_expr
-{
-  enum ztast_expr_type
-  {
-    ZTEXPR_VALUE,
-    ZTEXPR_ARRAY,
-    ZTEXPR_SCOPE
-  }
-  type;
-  union ztast_expr_data
-  {
-    struct ztast_value *value;
-    struct ztast_array *array;
-    struct ztast_scope *scope;
-  }
-  data;
-};
-
-/** An array a list of array elements. */
-struct ztast_array
-{
-  struct ztast_arrayelem *elems;
-};
-
-/** An array element places an expression at the given array index. */
-struct ztast_arrayelem
-{
-  struct ztast_arrayelem *next; /* linked list */
-  ztast_arrayindex_t      index;
-  struct ztast_expr      *expr;
-};
-
 /** A scope is a list of statements. */
 struct ztast_scope
 {
   struct ztast_statement *statements;
+};
+
+/** An intarray points to an intarrayinner, where present. */
+struct ztast_intarray
+{
+  struct ztast_intarrayinner *inner; /* or NULL */
+};
+
+/** An intarrayinner is a growable array of integers. */
+struct ztast_intarrayinner
+{
+  int           nused;
+  int           nallocated;
+  unsigned int *ints;
+};
+
+/** A scopearray points to an scopearrayinner, where present. */
+struct ztast_scopearray
+{
+  struct ztast_scopearrayinner *inner; /* or NULL */
+};
+
+/** A scopearrayinner is a growable array of pointers to scope. */
+struct ztast_scopearrayinner
+{
+  int                  nused;
+  int                  nallocated;
+  struct ztast_scope **scopes;
 };
 
 /* ----------------------------------------------------------------------- */
@@ -417,6 +443,7 @@ typedef int            ztversion_t;
  * \param nregions number of heap array specs
  * \param loaders array of loader functions - one per custom ID
  * \param nloaders number of loader functions
+ * \param syntax_error syntax error message(s) - dispose using zt_freesyntax()
  */
 ztresult_t zt_load(const ztstruct_t  *meta,
                    void              *structure,
@@ -424,7 +451,15 @@ ztresult_t zt_load(const ztstruct_t  *meta,
                    const ztregion_t  *regions,
                    int                nregions,
                    ztloader_t       **loaders,
-                   int                nloaders);
+                   int                nloaders,
+                   char             **syntax_error);
+
+/**
+ * Dispose of a syntax error.
+ *
+ * \param syntax_error syntax error to dispose of
+ */
+void zt_freesyntax(char *syntax_error);
 
 /* ----------------------------------------------------------------------- */
 

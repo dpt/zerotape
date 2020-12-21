@@ -40,10 +40,11 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
 /** Enumeration of possible syntax errors. */
 typedef enum ztsyntaxerr
 {
-  ztsyntx_NEED_ARRAY,
   ztsyntx_NEED_DECIMAL,
   ztsyntx_NEED_INTEGER,
+  ztsyntx_NEED_INTEGERARRAY,
   ztsyntx_NEED_SCOPE,
+  ztsyntx_NEED_SCOPEARRAY,
   ztsyntx_NEED_VALUE,
   ztsyntx_UNEXPECTED_VALUE_TYPE,
   ztsyntx_UNKNOWN_FIELD,
@@ -58,21 +59,22 @@ static const char *zt_syntaxstring(ztsyntaxerr_t e)
 {
   static const char *tab[] =
   {
-    /* ztsyntx_NEED_ARRAY */ "array required",
     /* ztsyntx_NEED_DECIMAL */ "decimal type required",
     /* ztsyntx_NEED_INTEGER */ "integer type required",
+    /* ztsyntx_NEED_INTEGERARRAY */ "integer array required",
     /* ztsyntx_NEED_SCOPE */ "scope required",
+    /* ztsyntx_NEED_SCOPEARRAY */ "scope array required",
     /* ztsyntx_NEED_VALUE */ "value type required", /* e.g. an array or scope received */
     /* ztsyntx_UNEXPECTED_VALUE_TYPE */ "unexpected value type",
     /* ztsyntx_UNKNOWN_FIELD */ "unknown field",
     /* ztsyntx_UNKNOWN_REGION */ "unknown region",
     /* ztsyntx_UNSUPPORTED */ "unsupported",
     /* ztsyntx_VALUE_RANGE */ "value out of range"
+    /* ztsyntx__LIMIT */ "unknown error"
   };
-  if (e < ztsyntx__LIMIT)
-    return tab[e];
-  else
-    return "unknown error";
+  if ((unsigned int) e > ztsyntx__LIMIT)
+    e = ztsyntx__LIMIT;
+  return tab[e];
 }
 
 /** Build and return a syntax error message. */
@@ -88,13 +90,13 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
 /** Handle a single integer field, or array of. */
 #define DO_INLINE(TYPE, MAX)                                                 \
   do {                                                                       \
+    const ztast_expr_t *expr = assignment->expr;                             \
+                                                                             \
     if (field->nelems == 1) { /* expecting a single element */               \
-      const ztast_expr_t  *expr;                                             \
       const ztast_value_t *value;                                            \
       TYPE                *rawvalue;                                         \
       unsigned int         integer;                                          \
                                                                              \
-      expr = assignment->expr;                                               \
       if (expr->type != ZTEXPR_VALUE)                                        \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
       value = expr->data.value;                                              \
@@ -107,56 +109,41 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       rawvalue = PVAL(structure, field->offset);                             \
       *rawvalue = integer;                                                   \
     } else { /* expecting an array */                                        \
-      const ztast_expr_t      *arrayexpr;                                    \
-      int                      index;                                        \
-      TYPE                    *rawarray;                                     \
-      const ztast_arrayelem_t *elem;                                         \
+      const ztast_intarray_t      *intarr;                                   \
+      const ztast_intarrayinner_t *inner;                                    \
+      TYPE                        *rawarr;                                   \
+      int                          i;                                        \
                                                                              \
-      arrayexpr = assignment->expr;                                          \
-      if (arrayexpr->type != ZTEXPR_ARRAY)                                   \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);                \
-                                                                             \
-      index    = -1;                                                         \
-      rawarray = PVAL(structure, field->offset);                             \
-      for (elem = arrayexpr->data.array->elems; elem; elem = elem->next) {   \
-        ztast_expr_t  *expr;                                                 \
-        ztast_value_t *value;                                                \
-        unsigned int   integer;                                              \
-                                                                             \
-        /* Elements without a specified position will have an index of -1 */ \
-        index = (elem->index >= 0) ? elem->index : index + 1;                \
-                                                                             \
-        expr = elem->expr;                                                   \
-        if (expr->type != ZTEXPR_VALUE)                                      \
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
-        value = expr->data.value;                                            \
-        if (value->type != ZTVAL_INTEGER)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);            \
-        integer = value->data.integer;                                       \
-        if (integer < 0 || integer > MAX)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
-                                                                             \
-        rawarray[index] = integer;                                           \
-        logf(("%d=%d,", index, integer));                                    \
+      if (expr->type != ZTEXPR_INTARRAY)                                     \
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGERARRAY);         \
+      intarr = expr->data.intarray;                                          \
+      inner = intarr->inner;                                                 \
+      if (inner != NULL) {                                                   \
+        rawarr = PVAL(structure, field->offset);                             \
+        for (i = 0; i < inner->nused; i++) {                                 \
+          unsigned int integer = inner->ints[i];                             \
+          if (integer < 0 || integer > MAX)                                  \
+            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);           \
+          rawarr[i] = integer;                                               \
+        }                                                                    \
       }                                                                      \
-      logf(("\n"));                                                          \
     }                                                                        \
   } while (0)
 
 /** Handle a pointer to single integer field, or array of. */
 #define DO_POINTER(TYPE, MAX)                                                \
   do {                                                                       \
+    const ztast_expr_t *expr = assignment->expr;                             \
+                                                                             \
     if (field->nelems == 1) { /* expecting a single element */               \
-      const ztast_expr_t  *valueexpr;                                        \
       const ztast_value_t *value;                                            \
       TYPE               **prawvalue;                                        \
       TYPE                *rawvalue;                                         \
       unsigned int         integer;                                          \
                                                                              \
-      valueexpr = assignment->expr;                                          \
-      if (valueexpr->type != ZTEXPR_VALUE)                                   \
+      if (expr->type != ZTEXPR_VALUE)                                        \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
-      value = valueexpr->data.value;                                         \
+      value = expr->data.value;                                              \
       if (value->type != ZTVAL_INTEGER)                                      \
         return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);              \
       integer = value->data.integer;                                         \
@@ -167,41 +154,26 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       rawvalue  = *prawvalue;                                                \
       *rawvalue = integer;                                                   \
     } else { /* expecting an array */                                        \
-      const ztast_expr_t      *arrayexpr;                                    \
-      int                      index;                                        \
-      TYPE                   **prawarray; /* fix constness here */           \
-      TYPE                    *rawarray;                                     \
-      const ztast_arrayelem_t *elem;                                         \
+      const ztast_intarray_t      *intarr;                                   \
+      const ztast_intarrayinner_t *inner;                                    \
+      TYPE                       **prawarr;                                  \
+      TYPE                        *rawarr;                                   \
+      int                          i;                                        \
                                                                              \
-      arrayexpr = assignment->expr;                                          \
-      if (arrayexpr->type != ZTEXPR_ARRAY)                                   \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);                \
-                                                                             \
-      index     = -1;                                                        \
-      prawarray = PVAL(structure, field->offset);                            \
-      rawarray  = *prawarray;                                                \
-      for (elem = arrayexpr->data.array->elems; elem; elem = elem->next) {   \
-        ztast_expr_t  *expr;                                                 \
-        ztast_value_t *value;                                                \
-        unsigned int   integer;                                              \
-                                                                             \
-        /* Elements without a specified position will have an index of -1 */ \
-        index = (elem->index >= 0) ? elem->index : index + 1;                \
-                                                                             \
-        expr = elem->expr;                                                   \
-        if (expr->type != ZTEXPR_VALUE)                                      \
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);              \
-        value = expr->data.value;                                            \
-        if (value->type != ZTVAL_INTEGER)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);            \
-        integer = value->data.integer;                                       \
-        if (integer < 0 || integer > MAX)                                    \
-          return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);             \
-                                                                             \
-        rawarray[index] = integer;                                           \
-        logf(("%d=%d,", index, integer));                                    \
+      if (expr->type != ZTEXPR_INTARRAY)                                     \
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGERARRAY);         \
+      intarr = expr->data.intarray;                                          \
+      inner = intarr->inner;                                                 \
+      if (inner != NULL) {                                                   \
+        prawarr = PVAL(structure, field->offset);                            \
+        rawarr = *prawarr;                                                   \
+        for (i = 0; i < inner->nused; i++) {                                 \
+          unsigned int integer = inner->ints[i];                             \
+          if (integer < 0 || integer > MAX)                                  \
+            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);           \
+          rawarr[i] = integer;                                               \
+        }                                                                    \
       }                                                                      \
-      logf(("\n"));                                                          \
     }                                                                        \
   } while (0)
 
@@ -289,39 +261,39 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
     }
     else /* expecting an array */
     {
-      const size_t             elsz = field->size; /* field->size is sizeof(struct) */
-      ztresult_t               rc;
-      const ztast_expr_t      *arrayexpr;
-      int                      index;
-      void                    *rawstruct;
-      const ztast_arrayelem_t *elem;
+      const ztast_expr_t            *arrayexpr;
+      const ztast_scopearrayinner_t *inner;
+      void                          *rawstruct;
+      int                            i;
 
       arrayexpr = assignment->expr;
-      if (arrayexpr->type != ZTEXPR_ARRAY)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);
+      if (arrayexpr->type != ZTEXPR_SCOPEARRAY)
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPEARRAY);
 
-      index = -1;
+      inner = arrayexpr->data.scopearray->inner;
+      if (inner == NULL)
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+
+      /* Note: This will initialise as many entries as data is provided for,
+       *       but not fault if any are missing. */
 
       rawstruct = PVAL(structure, field->offset);
 
-      for (elem = arrayexpr->data.array->elems; elem; elem = elem->next)
+      for (i = 0; i < inner->nused; i++)
       {
-        const ztast_expr_t *expr;
+        const ztast_scope_t *scope;
+        const size_t         elsz = field->size; /* field->size is sizeof(struct) */
+        ztresult_t           rc;
 
-        /* Elements without a specified position will have an index of -1 */
-        index = (elem->index >= 0) ? elem->index : index + 1;
+        scope = inner->scopes[i];
 
-        expr = elem->expr;
-        if (expr->type != ZTEXPR_SCOPE)
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
-
-        rc = zt_run_statements(expr->data.scope->statements,
+        rc = zt_run_statements(scope->statements,
                                field->metadata,
                                regions,
                                nregions,
                                loaders,
                                nloaders,
-                      (char *) rawstruct + index * elsz,
+                      (char *) rawstruct + i * elsz,
                                syntax_error);
         if (rc)
           return rc;
@@ -357,41 +329,41 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
     }
     else /* expecting an array */
     {
-      const size_t             elsz = field->size; /* field->size is sizeof(struct) */
-      ztresult_t               rc;
-      const ztast_expr_t      *arrayexpr;
-      int                      index;
-      void                   **prawstruct;
-      void                    *rawstruct;
-      const ztast_arrayelem_t *elem;
+      const ztast_expr_t            *arrayexpr;
+      const ztast_scopearrayinner_t *inner;
+      void                         **prawstruct;
+      void                          *rawstruct;
+      int                            i;
 
       arrayexpr = assignment->expr;
-      if (arrayexpr->type != ZTEXPR_ARRAY)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_ARRAY);
+      if (arrayexpr->type != ZTEXPR_SCOPEARRAY)
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPEARRAY);
 
-      index = -1;
+      inner = arrayexpr->data.scopearray->inner;
+      if (inner == NULL)
+        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+
+      /* Note: This will initialise as many entries as data is provided for,
+       *       but not fault if any are missing. */
 
       prawstruct = PVAL(structure, field->offset);
       rawstruct = *prawstruct;
 
-      for (elem = arrayexpr->data.array->elems; elem; elem = elem->next)
+      for (i = 0; i < inner->nused; i++)
       {
-        const ztast_expr_t *expr;
+        const ztast_scope_t *scope;
+        const size_t         elsz = field->size; /* field->size is sizeof(struct) */
+        ztresult_t           rc;
 
-        /* Elements without a specified position will have an index of -1 */
-        index = (elem->index >= 0) ? elem->index : index + 1;
+        scope = inner->scopes[i];
 
-        expr = elem->expr;
-        if (expr->type != ZTEXPR_SCOPE)
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
-
-        rc = zt_run_statements(expr->data.scope->statements,
+        rc = zt_run_statements(scope->statements,
                                field->metadata,
                                regions,
                                nregions,
                                loaders,
                                nloaders,
-                      (char *) rawstruct + index * elsz,
+                      (char *) rawstruct + i * elsz,
                                syntax_error);
         if (rc)
           return rc;
@@ -595,7 +567,7 @@ ztresult_t zt_run_program(const ztast_t     *ast,
                           ztloader_t       **loaders,
                           int                nloaders,
                           void              *structure,
-                          char             **syntax_error)
+                          char              *errbuf)
 {
   if (ast->program == NULL)
     return ztresult_NO_PROGRAM;
@@ -607,7 +579,7 @@ ztresult_t zt_run_program(const ztast_t     *ast,
                            loaders,
                            nloaders,
                            structure,
-                           syntax_error);
+                           errbuf);
 }
 
 /* ----------------------------------------------------------------------- */

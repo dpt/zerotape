@@ -17,133 +17,72 @@ ztast_viz_state_t;
 
 /* ----------------------------------------------------------------------- */
 
-static ztresult_t ztast_viz_statements(ztast_viz_state_t       *state,
-                                       const ztast_statement_t *statements,
-                                       int                      depth);
+static ztresult_t ztast_viz_statementlist(ztast_viz_state_t       *state,
+                                          const ztast_statement_t *stmts,
+                                          int                      depth);
+
+static ztresult_t ztast_viz_assignment(ztast_viz_state_t        *state,
+                                       const ztast_assignment_t *ass,
+                                       int                       depth);
+
+static ztresult_t ztast_viz_id(ztast_viz_state_t *state,
+                               const ztast_id_t  *id,
+                               int                depth);
+
 static ztresult_t ztast_viz_expr(ztast_viz_state_t  *state,
                                  const ztast_expr_t *expr,
                                  int                 depth);
 
-/* ----------------------------------------------------------------------- */
-
 static ztresult_t ztast_viz_value(ztast_viz_state_t   *state,
                                   const ztast_value_t *value,
-                                  int                  depth)
+                                  int                  depth);
+
+static ztresult_t ztast_viz_scope(ztast_viz_state_t   *state,
+                                  const ztast_scope_t *value,
+                                  int                  depth);
+
+static ztresult_t ztast_viz_intarray(ztast_viz_state_t      *state,
+                                     const ztast_intarray_t *intarr,
+                                     int                     depth);
+
+static ztresult_t ztast_viz_scopearray(ztast_viz_state_t        *state,
+                                       const ztast_scopearray_t *scopearr,
+                                       int                       depth);
+
+/* ----------------------------------------------------------------------- */
+
+static ztresult_t ztast_viz_program(ztast_viz_state_t     *state,
+                                    const ztast_program_t *prog,
+                                    int                    depth)
 {
-  int rc = ztresult_OK;
+  (void) fprintf(state->file, "\t\"%p\" [label=\"{AST|program}\"];\n", (void *) prog);
+  (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) prog, (void *) prog->statements);
 
-  switch (value->type)
-  {
-  case ZTVAL_INTEGER:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|integer|%d}\"];\n", (void *) value, value->data.integer);
-    break;
-
-  case ZTVAL_DECIMAL:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|decimal|%d}\"];\n", (void *) value, value->data.decimal);
-    break;
-
-  case ZTVAL_NIL:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|nil}\"];\n", (void *) value);
-    break;
-
-  default:
-    assert(0);
-  }
-
-  return rc;
+  return ztast_viz_statementlist(state, prog->statements, depth + 1);
 }
 
-static ztresult_t ztast_viz_id(ztast_viz_state_t *state,
-                               const ztast_id_t  *id,
-                               int                depth)
+static ztresult_t ztast_viz_statementlist(ztast_viz_state_t       *state,
+                                          const ztast_statement_t *stmtlist,
+                                          int                      depth)
 {
-  (void) fprintf(state->file, "\t\"%p\" [label=\"{id|name|\'%s\'}\"];\n", (void *) id, id->name);
-
-  return ztresult_OK;
-}
-
-static ztresult_t ztast_viz_array(ztast_viz_state_t   *state,
-                                  const ztast_array_t *array,
-                                  int                  depth)
-{
-  int                rc = ztresult_OK;
-  int                i;
-  ztast_arrayelem_t *elem;
-
-  (void) fprintf(state->file, "\t\"%p\" [label=\"array\"];\n", (void *) array);
-  (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) array, (void *) array->elems);
-
-  /* turn -1 indices into runs of ascending indices */
-  i = -1;
-  for (elem = array->elems; elem; elem = elem->next)
-  {
-    i = (elem->index >= 0) ? elem->index : i + 1;
-
-    (void) fprintf(state->file, "\t\"%p\" [label=\"index=%d\"];\n", (void *) elem, i);
-    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) elem, (void *) elem->expr);
-    rc = ztast_viz_expr(state, elem->expr, depth + 1);
-    if (rc)
-      return rc;
-
-    if (elem->next)
-      (void) fprintf(state->file, "\t\"%p\":e -> \"%p\":w;\n", (void *) elem, (void *) elem->next);
-  }
-
-  return ztresult_OK;
-}
-
-static ztresult_t ztast_viz_expr(ztast_viz_state_t  *state,
-                                 const ztast_expr_t *expr,
-                                 int                 depth)
-{
-  int rc = ztresult_OK;
-
-  switch (expr->type)
-  {
-  case ZTEXPR_VALUE:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|value}\"];\n", (void *) expr);
-    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.value);
-    rc = ztast_viz_value(state, expr->data.value, depth + 1);
-    break;
-
-  case ZTEXPR_ARRAY:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|array}\"];\n", (void *) expr);
-    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.array);
-    rc = ztast_viz_array(state, expr->data.array, depth + 1);
-    break;
-
-  case ZTEXPR_SCOPE:
-    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|scope}\"];\n", (void *) expr);
-    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.scope->statements);
-    rc = ztast_viz_statements(state, expr->data.scope->statements, depth + 1);
-    break;
-  }
-
-  return rc;
-}
-
-static ztresult_t ztast_viz_statements(ztast_viz_state_t       *state,
-                                       const ztast_statement_t *statements,
-                                       int                      depth)
-{
-  int                      rc = ztresult_OK;
+  ztresult_t               rc;
   const ztast_statement_t *stmt;
 
   assert(state);
 
-  if (statements == NULL)
+  if (stmtlist == NULL)
     return ztresult_OK; /* no statements */
 
-  for (stmt = statements; stmt != NULL; stmt = stmt->next)
+  for (stmt = stmtlist; stmt != NULL; stmt = stmt->next)
   {
     switch (stmt->type)
     {
     case ZTSTMT_ASSIGNMENT:
-      (void) fprintf(state->file, "\t\"%p\" [label=\"{statement|assignment|{<lhs>lhs|<rhs>rhs}}\"];\n", (void *) stmt);
-      (void) fprintf(state->file, "\t\"%p\":lhs -> \"%p\";\n", (void *) stmt, (void *) stmt->u.assignment->id);
-      (void) ztast_viz_id(state, stmt->u.assignment->id, depth + 1);
-      (void) fprintf(state->file, "\t\"%p\":rhs -> \"%p\";\n", (void *) stmt, (void *) stmt->u.assignment->expr);
-      (void) ztast_viz_expr(state, stmt->u.assignment->expr, depth + 1);
+      (void) fprintf(state->file, "\t\"%p\" [label=\"{statement|<ass>assignment}\"];\n", (void *) stmt);
+      (void) fprintf(state->file, "\t\"%p\":ass -> \"%p\";\n", (void *) stmt, (void *) stmt->u.assignment);
+      rc = ztast_viz_assignment(state, stmt->u.assignment, depth + 1);
+      if (rc)
+        return rc;
       break;
 
     default:
@@ -155,30 +94,158 @@ static ztresult_t ztast_viz_statements(ztast_viz_state_t       *state,
       (void) fprintf(state->file, "\t\"%p\":e -> \"%p\":w;\n", (void *) stmt, (void *) stmt->next);
   }
 
-  return rc;
+  return ztresult_OK;
 }
 
-static ztresult_t ztast_viz_program(ztast_viz_state_t     *state,
-                                    const ztast_program_t *pgm,
-                                    int                    depth)
+static ztresult_t ztast_viz_assignment(ztast_viz_state_t        *state,
+                                       const ztast_assignment_t *assmt,
+                                       int                       depth)
 {
-  int rc;
+  ztresult_t rc;
 
-  (void) fprintf(state->file, "\t\"%p\" [label=\"{AST|program}\"];\n", (void *) pgm);
-  (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) pgm, (void *) pgm->statements);
+  (void) fprintf(state->file, "\t\"%p\" [label=\"{assignment|{<lhs>lhs|<rhs>rhs}}\"];\n", (void *) assmt);
+  (void) fprintf(state->file, "\t\"%p\":lhs -> \"%p\";\n", (void *) assmt, (void *) assmt->id);
 
-  rc = ztast_viz_statements(state, pgm->statements, depth + 1);
+  rc = ztast_viz_id(state, assmt->id, depth + 1);
+  if (rc)
+    return rc;
+
+  (void) fprintf(state->file, "\t\"%p\":rhs -> \"%p\";\n", (void *) assmt, (void *) assmt->expr);
+
+  rc = ztast_viz_expr(state, assmt->expr, depth + 1);
   if (rc)
     return rc;
 
   return ztresult_OK;
 }
 
+static ztresult_t ztast_viz_id(ztast_viz_state_t *state,
+                               const ztast_id_t  *id,
+                               int                depth)
+{
+  (void) fprintf(state->file, "\t\"%p\" [label=\"{id|name|\'%s\'}\"];\n", (void *) id, id->name);
+
+  return ztresult_OK;
+}
+
+static ztresult_t ztast_viz_expr(ztast_viz_state_t  *state,
+                                 const ztast_expr_t *expr,
+                                 int                 depth)
+{
+  ztresult_t rc = ztresult_OK;
+
+  switch (expr->type)
+  {
+  case ZTEXPR_VALUE:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|value}\"];\n", (void *) expr);
+    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.value);
+    rc = ztast_viz_value(state, expr->data.value, depth + 1);
+    break;
+
+  case ZTEXPR_SCOPE:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|scope}\"];\n", (void *) expr);
+    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.scope);
+    rc = ztast_viz_scope(state, expr->data.scope, depth + 1);
+    break;
+
+  case ZTEXPR_INTARRAY:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|intarray}\"];\n", (void *) expr);
+    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.intarray);
+    rc = ztast_viz_intarray(state, expr->data.intarray, depth + 1);
+    break;
+
+  case ZTEXPR_SCOPEARRAY:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{expr|scopearray}\"];\n", (void *) expr);
+    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) expr, (void *) expr->data.scopearray);
+    rc = ztast_viz_scopearray(state, expr->data.scopearray, depth + 1);
+    break;
+
+  default:
+    assert(0);
+  }
+
+  return rc;
+}
+
+static ztresult_t ztast_viz_value(ztast_viz_state_t   *state,
+                                  const ztast_value_t *val,
+                                  int                  depth)
+{
+  ztresult_t rc = ztresult_OK;
+
+  switch (val->type)
+  {
+  case ZTVAL_INTEGER:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|integer|%d}\"];\n", (void *) val, val->data.integer);
+    break;
+
+  case ZTVAL_DECIMAL:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|decimal|%d}\"];\n", (void *) val, val->data.decimal);
+    break;
+
+  case ZTVAL_NIL:
+    (void) fprintf(state->file, "\t\"%p\" [label=\"{value|nil}\"];\n", (void *) val);
+    break;
+
+  default:
+    assert(0);
+  }
+
+  return rc;
+}
+
+static ztresult_t ztast_viz_scope(ztast_viz_state_t   *state,
+                                  const ztast_scope_t *scope,
+                                  int                  depth)
+{
+  (void) fprintf(state->file, "\t\"%p\" [label=\"{scope|<stt>statements}\"];\n", (void *) scope);
+  if (scope->statements)
+    (void) fprintf(state->file, "\t\"%p\":stt -> \"%p\";\n", (void *) scope, (void *) scope->statements);
+
+  return ztast_viz_statementlist(state, scope->statements, depth + 1);
+}
+
+static ztresult_t ztast_viz_intarray(ztast_viz_state_t      *state,
+                                     const ztast_intarray_t *intarr,
+                                     int                     depth)
+{
+  (void) fprintf(state->file, "\t\"%p\" [label=\"intarray\"];\n", (void *) intarr);
+
+  return ztresult_OK;
+}
+
+static ztresult_t ztast_viz_scopearray(ztast_viz_state_t        *state,
+                                       const ztast_scopearray_t *scopearr,
+                                       int                       depth)
+{
+  ztast_scopearrayinner_t *inner;
+  int                      i;
+
+  (void) fprintf(state->file, "\t\"%p\" [label=\"scopearray\"];\n", (void *) scopearr);
+
+  inner = scopearr->inner;
+  if (inner == NULL)
+    return ztresult_OK;
+
+  for (i = 0; i < scopearr->inner->nused; i++)
+  {
+    ztresult_t rc;
+
+    (void) fprintf(state->file, "\t\"%p\" -> \"%p\";\n", (void *) scopearr, (void *) scopearr->inner->scopes[i]);
+
+    rc = ztast_viz_scope(state, scopearr->inner->scopes[i], depth + 1);
+    if (rc)
+      return rc;
+  }
+
+  return ztresult_OK;
+}
+
 ztresult_t ztast_show(ztast_t *ast, const char *filename)
 {
+  ztresult_t        rc;
   FILE             *file;
   ztast_viz_state_t state;
-  int               rc;
 
   file = fopen(filename, "w");
   if (file == NULL)

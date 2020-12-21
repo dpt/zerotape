@@ -489,7 +489,7 @@ again:
     if (c != '/')
     {
       lex->ungetC(c, lex);
-      goto not;
+      goto notcomment;
     }
 
     c = lex->getC(lex);
@@ -498,10 +498,10 @@ again:
       if (c != EOF)
         lex->ungetC(c, lex);
       lex->ungetC('/', lex);
-      goto not;
+      goto notcomment;
     }
 
-    /* we've seen // - absorb all the rest */
+    /* we've found '//' - absorb the remainder of the line */
     do
       c = lex->getC(lex);
     while (c != '\n');
@@ -512,7 +512,7 @@ again:
     goto again;
   }
 
-not:
+notcomment:
   /* try the complex tokens first */
   for (i = 0; i < (int) NELEMS(map); i++)
   {
@@ -547,7 +547,6 @@ not:
     case ',': *token = ZTTOKEN_COMMA;     break;
     case '-': *token = ZTTOKEN_MINUS;     break;
     case '/': *token = ZTTOKEN_DIVIDE;    break;
-    case ':': *token = ZTTOKEN_COLON;     break;
     case ';': *token = ZTTOKEN_SEMICOLON; break;
     case '=': *token = ZTTOKEN_EQUALS;    break;
     case '[': *token = ZTTOKEN_LSQBRA;    break;

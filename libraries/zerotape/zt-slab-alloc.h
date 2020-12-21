@@ -18,7 +18,9 @@ void ztslaballoc_destroy(ztslaballoc_t *sa);
 void *ztslaballoc(size_t n, void *opaque);
 void ztslabfree(void *p, void *opaque);
 
+#ifdef ZT_DEBUG
 void ztslaballoc_spew(ztslaballoc_t *sa);
+#endif
 
 /* ----------------------------------------------------------------------- */
 

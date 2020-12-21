@@ -12,12 +12,17 @@ static ztresult_t parse_and_dump_dot(const char *filename,
                                      const char *dotfilename)
 {
   ztresult_t rc;
+  char       errbuf[ZTMAXERRBUF];
   ztast_t   *ast;
 
-  ast = ztast_from_file(filename);
+  ast = ztast_from_file(filename, errbuf);
   if (ast == NULL)
+  {
+    fprintf(stderr, "parse error: %s\n", errbuf);
     return ztresult_NO_PROGRAM;
+  }
 
+#ifdef ZT_DEBUG
   rc = ztast_walk(ast, NULL);
   if (rc)
     return rc;
@@ -25,7 +30,8 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   rc = ztast_show(ast, dotfilename);
   if (rc)
     return rc;
-
+#endif /* ZT_DEBUG */
+  
   ztast_destroy(ast);
 
   return rc;
@@ -54,6 +60,10 @@ int main(int argc, const char *argv[])
   ztlex_stringtest(" 1 nil 2 ");
 
   rc = parse_and_dump_dot("test.zt", "ztast.dot");
+  if (rc)
+  {
+    fprintf(stderr, "parse_and_dump_dot() returned error %d\n", rc);
+  }
 
   Fortify_LeaveScope();
 

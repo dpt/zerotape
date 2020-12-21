@@ -6,6 +6,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "zt-slab-alloc.h"
 
@@ -32,7 +33,6 @@ struct ztslaballoc
   size_t   total_allocs;
   size_t   current_allocs;
   size_t   total_allocated;
-  size_t   current_allocated;
 };
 
 /* ----------------------------------------------------------------------- */
@@ -95,7 +95,7 @@ void *ztslaballoc(size_t n, void *opaque)
       if (newlist == NULL)
         return NULL;
 
-      sa->slablist = newlist;
+      sa->slablist         = newlist;
       sa->nslablistalloced = alloced;
     }
 
@@ -115,7 +115,6 @@ void *ztslaballoc(size_t n, void *opaque)
   sa->total_allocs++;
   sa->current_allocs++;
   sa->total_allocated += n;
-  //ztslaballoc->current_allocated += n;
 
   return p;
 }
@@ -123,13 +122,17 @@ void *ztslaballoc(size_t n, void *opaque)
 void ztslabfree(void *p, void *opaque)
 {
   ztslaballoc_t *sa = opaque;
+
+  if (p == NULL)
+    return;
+
   sa->current_allocs--;
-  //ztslaballoc->current_allocated -= n; // would need a runtime size query
-  //free(p); /* we don't free in this allocator */
+  /* we don't free in this allocator */
 }
 
 /* ----------------------------------------------------------------------- */
 
+#ifdef ZT_DEBUG
 void ztslaballoc_spew(ztslaballoc_t *sa)
 {
   if (sa == NULL)
@@ -139,9 +142,10 @@ void ztslaballoc_spew(ztslaballoc_t *sa)
   printf("- total blocks allocated=%lu\n", sa->total_allocs);
   printf("- current blocks allocated=%lu\n", sa->current_allocs);
   printf("- total bytes allocated=%lu bytes\n", sa->total_allocated);
-  printf("- number of slabs=%lu used (= %lu total bytes). space for %lu pointers were allocated\n", sa->nslablistused, sa->nslablistused * SLAB_SIZE, sa->nslablistalloced);
+  printf("- number of slabs=%lu used (of %lu) @ %d each = %lu total bytes\n", sa->nslablistused, sa->nslablistalloced, SLAB_SIZE, sa->nslablistused * SLAB_SIZE);
   printf("- average allocation size=%.2f\n", (double) sa->total_allocated / sa->total_allocs);
 }
+#endif
 
 /* ----------------------------------------------------------------------- */
 

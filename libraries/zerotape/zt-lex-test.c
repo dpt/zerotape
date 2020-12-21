@@ -25,7 +25,6 @@ const char *ztlex_tokname(ztlextok_t t)
   /* "," */ case ZTTOKEN_COMMA: return "COMMA";
   /* "-" */ case ZTTOKEN_MINUS: return "MINUS";
   /* "/" */ case ZTTOKEN_DIVIDE: return "DIVIDE";
-  /* ":" */ case ZTTOKEN_COLON: return "COLON";
   /* ";" */ case ZTTOKEN_SEMICOLON: return "SEMICOLON";
   /* "=" */ case ZTTOKEN_EQUALS: return "EQUALS";
   /* "[" */ case ZTTOKEN_LSQBRA: return "LSQBRA";

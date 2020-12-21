@@ -71,7 +71,7 @@ static ztresult_t savestack_push(save_stack_t      *stack,
     if (newallocated < InitialStackSize)
       newallocated = InitialStackSize;
 
-    newstack = realloc(stack->stack, newallocated * sizeof(*newstack));
+    newstack = realloc(stack->stack, newallocated * sizeof(*newstack)); // TODO: hoist to a memory manager
     if (newstack == NULL)
       return ztresult_OOM;
 
@@ -145,14 +145,18 @@ static void emitf(savestate_t *state, const char *fmt, ...)
     depth = state->depth;
     for (i = 0; i < depth; i++)
     {
+#ifdef ZT_DEBUG
       printf("  ");
+#endif
       fprintf(state->f, "  ");
     }
   }
 
+#ifdef ZT_DEBUG
   va_start(ap, fmt);
   vprintf(fmt, ap);
   va_end(ap);
+#endif
 
   va_start(ap, fmt);
   vfprintf(state->f, fmt, ap);
@@ -260,9 +264,14 @@ static ztresult_t savehandler_startstruct(const char *name, void *opaque)
     return rc;
 
   if (isarray)
-    emitf(state, "%d: {\n", scope->index++);
+  {
+    scope->index++;
+    emitf(state, "{\n");
+  }
   else
+  {
     emitf(state, "%s = {\n", name);
+  }
 
   indent(state);
 
@@ -400,8 +409,8 @@ ztresult_t zt_save(const ztstruct_t  *metastruct,
   state.indent_is_due = 0;
   state.depth         = 0;
   savestack_setup(&state.stack);
-  state.savers  = savers;
-  state.nsavers = nsavers;
+  state.savers        = savers;
+  state.nsavers       = nsavers;
 
   rc = zt_walk(metastruct, structure, regions, nregions, &savehandlers, &state);
   if (rc)

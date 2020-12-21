@@ -10,16 +10,20 @@
 
 /* ----------------------------------------------------------------------- */
 
+#define ZTMAXERRBUF 100
+
+/* ----------------------------------------------------------------------- */
+
 typedef struct ztparseinfo
 {
   ztast_t *ast;
-  int      syntax_error;
+  char    *errbuf;
 }
 ztparseinfo_t;
 
 /* ----------------------------------------------------------------------- */
 
-ztast_t *ztast_from_file(const char *filename);
+ztast_t *ztast_from_file(const char *filename, char errbuf[ZTMAXERRBUF]);
 
 /* ----------------------------------------------------------------------- */
 

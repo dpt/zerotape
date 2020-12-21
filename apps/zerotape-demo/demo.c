@@ -29,6 +29,8 @@ typedef struct example
   unsigned int  integer;
   unsigned int *pointer_to_integer;
 
+  unsigned int  integer_array[3];
+
   sub_t         inline_sub;
   sub_t        *pointer_to_sub;
   sub_t         array_of_sub[3];
@@ -101,6 +103,7 @@ static const ztfield_t example_fields[] =
 {
   ZTUINT(integer, example_t),
   ZTUINTPTR(pointer_to_integer, example_t),
+  ZTUINTARRAY(integer_array, example_t, 3),
   ZTSTRUCT(inline_sub, example_t, sub_t, &substruct_meta),
   ZTSTRUCTPTR(pointer_to_sub, example_t, sub_t *, &substruct_meta),
   ZTSTRUCTARRAY(array_of_sub, example_t, sub_t, 3, &substruct_meta),
@@ -204,6 +207,7 @@ int main(int argc, const char *argv[])
   sub_t       sub;
   ztsaver_t  *savers[1];
   ztloader_t *loaders[1];
+  char       *syntax_error;
 
   tenbyte = malloc(10);
   if (tenbyte == NULL)
@@ -213,6 +217,9 @@ int main(int argc, const char *argv[])
 
   example.integer               = 42;
   example.pointer_to_integer    = &pointed_at;
+  example.integer_array[0]      = 61;
+  example.integer_array[1]      = 62;
+  example.integer_array[2]      = 63;
   example.inline_sub.value      = 43;
   example.pointer_to_sub        = &sub;
   example.array_of_sub[0].value = 44;
@@ -243,6 +250,7 @@ int main(int argc, const char *argv[])
     return EXIT_FAILURE;
   }
 
+  /* Setup the example structure layout (but not the values themselves) */
   memset(&example, 0x55, sizeof(example_t));
   example.pointer_to_integer    = &pointed_at;
   example.pointer_to_sub        = &sub;
@@ -254,15 +262,24 @@ int main(int argc, const char *argv[])
                &regions[0],
                 NELEMS(regions),
                 loaders,
-               NELEMS(loaders));
+               NELEMS(loaders),
+               &syntax_error);
   if (rc != ztresult_OK)
   {
     fprintf(stderr, "zt_load failed (%d)\n", rc);
+    if (syntax_error)
+    {
+      fprintf(stderr, "syntax error: %s\n", syntax_error);
+      zt_freesyntax(syntax_error);
+    }
     return EXIT_FAILURE;
   }
 
   assert(example.integer == 42);
   assert(pointed_at == 33);
+  assert(example.integer_array[0] == 61);
+  assert(example.integer_array[1] == 62);
+  assert(example.integer_array[2] == 63);
   assert(example.inline_sub.value == 43);
   assert(example.pointer_to_sub->value == 51);
   assert(example.array_of_sub[0].value == 44);

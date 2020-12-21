@@ -118,7 +118,7 @@ ztresult_t zt_walk(const ztstruct_t       *metastruct,
 
           for (i = 0; i < f->nelems; i++)
           {
-            rc = walkhandlers->startstruct(NULL, opaque);
+            rc = walkhandlers->startstruct(NULL /* name */, opaque);
             if (rc)
               return rc;
 

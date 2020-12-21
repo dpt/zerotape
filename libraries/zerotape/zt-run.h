@@ -17,7 +17,7 @@
  * \param loaders array of loader functions - one per custom ID
  * \param nloaders number of loader functions
  * \param structure structure to populate
- * \param syntax_error error message, or NULL if none
+ * \param errbuf buffer for error message(s)
  */
 ztresult_t zt_run_program(const ztast_t    *ast,
                           const ztstruct_t *meta,
@@ -26,7 +26,7 @@ ztresult_t zt_run_program(const ztast_t    *ast,
                           ztloader_t      **loaders,
                           int               nloaders,
                           void             *structure,
-                          char            **syntax_error);
+                          char             *errbuf);
 
 #endif /* ZT_RUN_H */
 

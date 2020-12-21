@@ -17,11 +17,15 @@
 #include "zt-driver.h"
 #include "zt-gramx.h"
 
+#include "zt-lex-test.h"
+
 /* ----------------------------------------------------------------------- */
 
 static void *lexer_malloc(size_t n)
 {
+#ifdef ZT_DEBUG
   printf("lexer allocated %lu\n", n);
+#endif
   return malloc(n);
 }
 
@@ -32,7 +36,9 @@ static void lexer_free(void *p)
 
 static void *parser_malloc(size_t n)
 {
+#ifdef ZT_DEBUG
   printf("parser allocated %lu\n", n);
+#endif
   return malloc(n);
 }
 
@@ -54,47 +60,63 @@ static void ztparser_log(const char *fmt, ...)
 
 /* ----------------------------------------------------------------------- */
 
-ztast_t *ztast_from_file(const char *filename)
+ztast_t *ztast_from_file(const char *filename, char errbuf[ZTMAXERRBUF])
 {
   ztlex_t          *lexer;
   ztparseinfo_t     parseinfo;
   void             *parser;
+  ztslaballoc_t    *slaballoc;
   ztast_t          *ast;
   ztlextok_t        token;
   const ztlexinf_t *info;
-  ztslaballoc_t    *astslaballoc;
 
+  errbuf[0] = '\0';
+
+  /* Build a lexer */
   lexer = ztlex_from_file(lexer_malloc, lexer_free, filename);
   if (lexer == NULL)
     return NULL;
 
+  /* Allocate a parser */
   parser = ztparseAlloc(parser_malloc, &parseinfo);
-  astslaballoc = ztslaballoc_create();
-  if (astslaballoc == NULL)
+
+  /* Create a memory allocator */
+  slaballoc = ztslaballoc_create();
+  if (slaballoc == NULL)
   {
     ztparseFree(parser, parser_free);
     return NULL;
   }
-  ast = ztast_create(ztslaballoc, ztslabfree, astslaballoc, ztparser_log);
+
+  /* Create an AST */
+  ast = ztast_create(ztslaballoc, ztslabfree, slaballoc, ztparser_log);
   if (ast == NULL)
-  {
     goto stop;
-  }
-  parseinfo.ast = ast;
-  parseinfo.syntax_error = NULL;
+
+  /* Setup parser */
+  parseinfo.ast    = ast;
+  parseinfo.errbuf = errbuf;
+
+  /* Uncomment to enable parser debug output */
+  /* ztparseTrace(stderr, "ztparse: "); */
+
+  /* Feed the parser one token at a time */
   while (ztlex_next_token(lexer, &token, &info))
   {
     ztparse(parser, token, (ztlexinf_t *) info); /* cast away const for interface */
-    if (parseinfo.syntax_error)
+    if (parseinfo.errbuf[0])
       goto stop;
   }
   ztparse(parser, 0, (ztlexinf_t *) info);
 
 stop:
   ztparseFree(parser, parser_free);
-  ztslaballoc_spew(astslaballoc);
+#ifdef ZT_DEBUG
+  ztslaballoc_spew(slaballoc);
+#endif
   ztlex_destroy(lexer);
-  return (parseinfo.syntax_error) ? NULL : ast;
+
+  return (parseinfo.errbuf[0] == '\0') ? ast : NULL;
 }
 
 /* ----------------------------------------------------------------------- */
