@@ -291,7 +291,7 @@ typedef ztresult_t (ztsaver_t)(const void *pvalue, char *buf, size_t bufsz);
  * to pvalue. */
 typedef ztresult_t (ztloader_t)(const ztast_expr_t *expr,
                                 void               *pvalue,
-                                char              **syntax_error);
+                                char               *errbuf);
 
 /* ----------------------------------------------------------------------- */
 

@@ -33,7 +33,7 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
                                     ztloader_t             **loaders,
                                     int                      nloaders,
                                     void                    *structure,
-                                    char                   **syntax_error);
+                                    char                    *errbuf);
 
 /* ----------------------------------------------------------------------- */
 
@@ -78,9 +78,9 @@ static const char *zt_syntaxstring(ztsyntaxerr_t e)
 }
 
 /** Build and return a syntax error message. */
-static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
+static ztresult_t zt_mksyntax(char *errbuf, ztsyntaxerr_t e)
 {
-  *syntax_error = (char *) zt_syntaxstring(e);
+  strcpy(errbuf, zt_syntaxstring(e));
   return ztresult_SYNTAX_ERROR;
 }
 
@@ -98,13 +98,13 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       unsigned int         integer;                                          \
                                                                              \
       if (expr->type != ZTEXPR_VALUE)                                        \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);                      \
       value = expr->data.value;                                              \
       if (value->type != ZTVAL_INTEGER)                                      \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);              \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGER);                    \
       integer = value->data.integer;                                         \
       if (integer < 0 || integer > MAX)                                      \
-        return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);               \
+        return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                     \
                                                                              \
       rawvalue = PVAL(structure, field->offset);                             \
       *rawvalue = integer;                                                   \
@@ -115,7 +115,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       int                          i;                                        \
                                                                              \
       if (expr->type != ZTEXPR_INTARRAY)                                     \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGERARRAY);         \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGERARRAY);               \
       intarr = expr->data.intarray;                                          \
       inner = intarr->inner;                                                 \
       if (inner != NULL) {                                                   \
@@ -123,7 +123,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
         for (i = 0; i < inner->nused; i++) {                                 \
           unsigned int integer = inner->ints[i];                             \
           if (integer < 0 || integer > MAX)                                  \
-            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);           \
+            return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                 \
           rawarr[i] = integer;                                               \
         }                                                                    \
       }                                                                      \
@@ -142,13 +142,13 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       unsigned int         integer;                                          \
                                                                              \
       if (expr->type != ZTEXPR_VALUE)                                        \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);                \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);                      \
       value = expr->data.value;                                              \
       if (value->type != ZTVAL_INTEGER)                                      \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGER);              \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGER);                    \
       integer = value->data.integer;                                         \
       if (integer < 0 || integer > MAX)                                      \
-        return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);               \
+        return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                     \
                                                                              \
       prawvalue = PVAL(structure, field->offset);                            \
       rawvalue  = *prawvalue;                                                \
@@ -161,7 +161,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
       int                          i;                                        \
                                                                              \
       if (expr->type != ZTEXPR_INTARRAY)                                     \
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_INTEGERARRAY);         \
+        return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGERARRAY);               \
       intarr = expr->data.intarray;                                          \
       inner = intarr->inner;                                                 \
       if (inner != NULL) {                                                   \
@@ -170,7 +170,7 @@ static ztresult_t zt_mksyntax(char **syntax_error, ztsyntaxerr_t e)
         for (i = 0; i < inner->nused; i++) {                                 \
           unsigned int integer = inner->ints[i];                             \
           if (integer < 0 || integer > MAX)                                  \
-            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);           \
+            return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                 \
           rawarr[i] = integer;                                               \
         }                                                                    \
       }                                                                      \
@@ -196,13 +196,11 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                                    ztloader_t              **loaders,
                                    int                       nloaders,
                                    void                     *structure,
-                                   char                    **syntax_error)
+                                   char                     *errbuf)
 {
   const char      *name;
   int              f;
   const ztfield_t *field;
-
-  *syntax_error = NULL;
 
   name = assignment->id->name;
   logf(("assignment to field '%s'\n", name));
@@ -210,7 +208,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
     if (strcmp(meta->fields[f].name, name) == 0)
       break;
   if (f == meta->nfields)
-    zt_mksyntax(syntax_error, ztsyntx_UNKNOWN_FIELD);
+    zt_mksyntax(errbuf, ztsyntx_UNKNOWN_FIELD);
 
   field = &meta->fields[f];
   assert(field->nelems >= 1);
@@ -244,7 +242,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       scopeexpr = assignment->expr;
       if (scopeexpr->type != ZTEXPR_SCOPE)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_SCOPE);
 
       rawstruct = PVAL(structure, field->offset);
 
@@ -255,7 +253,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                              loaders,
                              nloaders,
                              rawstruct,
-                             syntax_error);
+                             errbuf);
       if (rc)
         return rc;
     }
@@ -268,11 +266,11 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       arrayexpr = assignment->expr;
       if (arrayexpr->type != ZTEXPR_SCOPEARRAY)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPEARRAY);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_SCOPEARRAY);
 
       inner = arrayexpr->data.scopearray->inner;
       if (inner == NULL)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);
 
       /* Note: This will initialise as many entries as data is provided for,
        *       but not fault if any are missing. */
@@ -294,7 +292,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                                loaders,
                                nloaders,
                       (char *) rawstruct + i * elsz,
-                               syntax_error);
+                               errbuf);
         if (rc)
           return rc;
       }
@@ -311,7 +309,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       scopeexpr = assignment->expr;
       if (scopeexpr->type != ZTEXPR_SCOPE)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_SCOPE);
 
       prawstruct = PVAL(structure, field->offset);
       rawstruct = *prawstruct;
@@ -323,7 +321,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                              loaders,
                              nloaders,
                              rawstruct,
-                             syntax_error);
+                             errbuf);
       if (rc)
         return rc;
     }
@@ -337,11 +335,11 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       arrayexpr = assignment->expr;
       if (arrayexpr->type != ZTEXPR_SCOPEARRAY)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_SCOPEARRAY);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_SCOPEARRAY);
 
       inner = arrayexpr->data.scopearray->inner;
       if (inner == NULL)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);
 
       /* Note: This will initialise as many entries as data is provided for,
        *       but not fault if any are missing. */
@@ -364,7 +362,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
                                loaders,
                                nloaders,
                       (char *) rawstruct + i * elsz,
-                               syntax_error);
+                               errbuf);
         if (rc)
           return rc;
       }
@@ -383,7 +381,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       assignmentexpr = assignment->expr;
       if (assignmentexpr->type != ZTEXPR_VALUE)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);
 
       prawvalue = PVAL(structure, field->offset);
 
@@ -392,7 +390,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
       case ZTVAL_INTEGER:
         index = assignmentexpr->data.value->data.integer;
         if (index < 0 || index >= field->array->nelems)
-          return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
+          return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);
 
         *prawvalue = (char *) field->array->base + index * elsz;
         break;
@@ -402,12 +400,12 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         break;
 
       default:
-        return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE_TYPE);
+        return zt_mksyntax(errbuf, ztsyntx_UNEXPECTED_VALUE_TYPE);
       }
     }
     else /* expecting an array */
     {
-      return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+      return zt_mksyntax(errbuf, ztsyntx_UNSUPPORTED);
     }
     break;
 
@@ -424,7 +422,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         if (field->regionid == regions[r].id)
           break;
       if (r == nregions)
-        return zt_mksyntax(syntax_error, ztsyntx_UNKNOWN_REGION);
+        return zt_mksyntax(errbuf, ztsyntx_UNKNOWN_REGION);
 
       array = &regions[r].spec;
       elsz  = array->length / array->nelems;
@@ -437,7 +435,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
         assignmentexpr = assignment->expr;
         if (assignmentexpr->type != ZTEXPR_VALUE)
-          return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+          return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);
 
         prawvalue = PVAL(structure, field->offset);
 
@@ -446,7 +444,7 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
         case ZTVAL_INTEGER:
           index = assignmentexpr->data.value->data.integer;
           if (index < 0 || index >= array->nelems)
-            return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
+            return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);
 
           *prawvalue = (char *) array->base + index * elsz;
           break;
@@ -456,12 +454,12 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
           break;
 
         default:
-          return zt_mksyntax(syntax_error, ztsyntx_UNEXPECTED_VALUE_TYPE);
+          return zt_mksyntax(errbuf, ztsyntx_UNEXPECTED_VALUE_TYPE);
         }
       }
       else /* expecting an array */
       {
-        return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+        return zt_mksyntax(errbuf, ztsyntx_UNSUPPORTED);
       }
       break;
     }
@@ -475,19 +473,19 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       assignmentexpr = assignment->expr;
       if (assignmentexpr->type != ZTEXPR_VALUE)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_VALUE);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_VALUE);
       if (assignmentexpr->data.value->type != ZTVAL_DECIMAL)
-        return zt_mksyntax(syntax_error, ztsyntx_NEED_DECIMAL);
+        return zt_mksyntax(errbuf, ztsyntx_NEED_DECIMAL);
       decimal = assignmentexpr->data.value->data.decimal;
       if (decimal < 0 || decimal > 999)
-        return zt_mksyntax(syntax_error, ztsyntx_VALUE_RANGE);
+        return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);
 
       prawvalue = PVAL(structure, field->offset);
       *prawvalue = decimal;
     }
     else /* expecting an array */
     {
-      return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+      return zt_mksyntax(errbuf, ztsyntx_UNSUPPORTED);
     }
     break;
 
@@ -499,11 +497,11 @@ static ztresult_t zt_do_assignment(const ztast_assignment_t *assignment,
 
       assignmentexpr = assignment->expr;
       prawvalue      = PVAL(structure, field->offset);
-      return loaders[field->typeidx](assignmentexpr, prawvalue, syntax_error);
+      return loaders[field->typeidx](assignmentexpr, prawvalue, errbuf);
     }
     else /* expecting an array */
     {
-      return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+      return zt_mksyntax(errbuf, ztsyntx_UNSUPPORTED);
     }
     break;
   }
@@ -530,7 +528,7 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
                                     ztloader_t             **loaders,
                                     int                      nloaders,
                                     void                    *structure,
-                                    char                   **syntax_error)
+                                    char                    *errbuf)
 {
   ztresult_t               rc;
   const ztast_statement_t *statement;
@@ -547,13 +545,13 @@ static ztresult_t zt_run_statements(const ztast_statement_t *statements,
                             loaders,
                             nloaders,
                             structure,
-                            syntax_error);
+                            errbuf);
       if (rc)
         return rc;
       break;
 
     default:
-      return zt_mksyntax(syntax_error, ztsyntx_UNSUPPORTED);
+      return zt_mksyntax(errbuf, ztsyntx_UNSUPPORTED);
     }
   }
 

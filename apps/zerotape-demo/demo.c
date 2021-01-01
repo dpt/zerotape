@@ -163,32 +163,32 @@ ztresult_t bandmember_saver(const void *pvoidval, char *buf, size_t bufsz)
  */
 ztresult_t bandmember_loader(const ztast_expr_t *expr,
                              void               *pvoidval,
-                             char              **syntax_error)
+                             char               *errbuf)
 {
   const char **ppcharval = (const char **) pvoidval;
   int          index;
 
   if (expr->type != ZTEXPR_VALUE)
   {
-    *syntax_error = "value type required (custom)"; /* ztsyntx_NEED_VALUE */
+    strcpy(errbuf, "value type required (custom)"); /* ztsyntx_NEED_VALUE */
     return ztresult_SYNTAX_ERROR;
   }
   if (expr->data.value->type != ZTVAL_INTEGER)
   {
-    *syntax_error = "integer type required (custom)"; /* ztsyntx_NEED_INTEGER */
+    strcpy(errbuf, "integer type required (custom)"); /* ztsyntx_NEED_INTEGER */
     return ztresult_SYNTAX_ERROR;
   }
   index = expr->data.value->data.integer;
   if (index < 0 || index >= NELEMS(popular_beat_combo))
   {
-    *syntax_error = "value out of range (custom)"; /* ztsyntx_VALUE_RANGE */
+    strcpy(errbuf, "value out of range (custom)"); /* ztsyntx_VALUE_RANGE */
     return ztresult_SYNTAX_ERROR;
   }
 
   *ppcharval = popular_beat_combo[index];
-  *syntax_error = NULL;
+  *errbuf = '\0';
   return ztresult_OK;
-}
+} 
 
 /* ----------------------------------------------------------------------- */
 
@@ -197,7 +197,7 @@ int main(int argc, const char *argv[])
 #ifdef __riscos
   static const char testfile[] = "demo_zt";
 #else
-  static const char testfile[] = "demo/zt";
+  static const char testfile[] = "demo.zt";
 #endif
 
   ztresult_t  rc;
@@ -243,7 +243,7 @@ int main(int argc, const char *argv[])
                &regions[0],
                 NELEMS(regions),
                 savers,
-               NELEMS(savers));
+                NELEMS(savers));
   if (rc != ztresult_OK)
   {
     fprintf(stderr, "zt_save failed (%d)\n", rc);
