@@ -85,9 +85,6 @@ ztast_scopearrayinner_t *ztast_scopearrayinner_append(ztast_t                 *a
 /* ----------------------------------------------------------------------- */
 
 #ifdef ZT_DEBUG
-/* Walks the AST, printing debug. */
-ztresult_t ztast_walk(ztast_t *ast, void *opaque);
-
 /* Walks the AST, building a dot format graph. */
 ztresult_t ztast_show(ztast_t *ast, const char *filename);
 #endif

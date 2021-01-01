@@ -23,10 +23,6 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   }
 
 #ifdef ZT_DEBUG
-  rc = ztast_walk(ast, NULL);
-  if (rc)
-    return rc;
-
   rc = ztast_show(ast, dotfilename);
   if (rc)
     return rc;
