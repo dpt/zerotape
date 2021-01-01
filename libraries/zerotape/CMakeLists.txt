@@ -8,7 +8,7 @@
 add_library(zerotape)
 
 set_target_properties(zerotape PROPERTIES
-                      VERSION 0.0.2
+                      VERSION 0.4.1
                       DESCRIPTION "Serialisation library"
                       PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/include/zerotape/zerotape.h
                       C_STANDARD 90)
