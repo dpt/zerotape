@@ -31,14 +31,20 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#define SEP "\\"
+#define EXTSEP "."
 extern int access(const char *path, int mode);
 #ifdef __cplusplus
 }
 #endif
-#elif __riscos
+#elif defined(__riscos)
+#define SEP "."
+#define EXTSEP "/"
 static int access(const char *path, int mode) { return 0; }
 #else
 #include <unistd.h>
+#define SEP "/"
+#define EXTSEP "."
 #endif
 
 /* #define PRIVATE static */
@@ -3182,7 +3188,7 @@ PRIVATE char *file_makename(struct lemon *lemp, const char *suffix)
   int sz;
 
   if( outputDir ){
-    cp = strrchr(filename, '/');
+    cp = strrchr(filename, '.'); // DPT
     if( cp ) filename = cp + 1;
   }
   sz = lemonStrlen(filename);
@@ -3195,14 +3201,24 @@ PRIVATE char *file_makename(struct lemon *lemp, const char *suffix)
     exit(1);
   }
   name[0] = 0;
+#ifdef __riscos
   if( outputDir ){
     lemon_strcpy(name, outputDir);
-    lemon_strcat(name, "/");
+    lemon_strcat(name, SEP);
+  }
+  lemon_strcat(name,suffix+1); // suffix starts with a dot
+  lemon_strcat(name,SEP);
+  lemon_strcat(name,filename);
+#else
+  if( outputDir ){
+    lemon_strcpy(name, outputDir);
+    lemon_strcat(name, SEP);
   }
   lemon_strcat(name,filename);
   cp = strrchr(name,'.');
   if( cp ) *cp = 0;
   lemon_strcat(name,suffix);
+#endif
   return name;
 }
 
@@ -3424,7 +3440,7 @@ void ReportOutput(struct lemon *lemp)
   struct rule *rp;
   FILE *fp;
 
-  fp = file_open(lemp,".out","wb");
+  fp = file_open(lemp,".out","w");
   if( fp==0 ) return;
   for(i=0; i<lemp->nxstate; i++){
     stp = lemp->sorted[i];
@@ -4312,7 +4328,7 @@ void ReportTable(
 
   in = tplt_open(lemp);
   if( in==0 ) return;
-  out = file_open(lemp,".c","wb");
+  out = file_open(lemp,".c","w");
   if( out==0 ){
     fclose(in);
     return;
@@ -4320,7 +4336,7 @@ void ReportTable(
   if( sqlFlag==0 ){
     sql = 0;
   }else{
-    sql = file_open(lemp, ".sql", "wb");
+    sql = file_open(lemp, ".sql", "w");
     if( sql==0 ){
       fclose(in);
       fclose(out);
@@ -4966,7 +4982,7 @@ void ReportHeader(struct lemon *lemp)
       return;
     }
   }
-  out = file_open(lemp,".h","wb");
+  out = file_open(lemp,".h","w");
   if( out ){
     for(i=1; i<lemp->nterminal; i++){
       fprintf(out,"#define %s%-30s %3d\n",prefix,lemp->symbols[i]->name,i);
