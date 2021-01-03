@@ -135,7 +135,9 @@ static const ztstruct_t example_meta =
 
 /* This is a custom value save handler. It takes the value from the struct
  * and formats it into text so it can be output to file. */
-ztresult_t bandmember_saver(const void *pvoidval, char *buf, size_t bufsz)
+static ztresult_t bandmember_saver(const void *pvoidval,
+                                   char       *buf,
+                                   size_t      bufsz)
 {
   const char **ppcharval = (const char **) pvoidval;
   int          i;
@@ -161,9 +163,9 @@ ztresult_t bandmember_saver(const void *pvoidval, char *buf, size_t bufsz)
  * must be careful to validate as much as possible. The AST could contain
  * *any* valid program expression.
  */
-ztresult_t bandmember_loader(const ztast_expr_t *expr,
-                             void               *pvoidval,
-                             char               *errbuf)
+static ztresult_t bandmember_loader(const ztast_expr_t *expr,
+                                    void               *pvoidval,
+                                    char               *errbuf)
 {
   const char **ppcharval = (const char **) pvoidval;
   int          index;
@@ -188,11 +190,11 @@ ztresult_t bandmember_loader(const ztast_expr_t *expr,
   *ppcharval = popular_beat_combo[index];
   *errbuf = '\0';
   return ztresult_OK;
-} 
+}
 
 /* ----------------------------------------------------------------------- */
 
-int main(int argc, const char *argv[])
+int main(void)
 {
 #ifdef __riscos
   static const char testfile[] = "demo_zt";

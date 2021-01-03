@@ -6,10 +6,16 @@
 
 #include <stdio.h>
 
-void *ztparseAlloc(void *(*mallocProc)(size_t), ztparseinfo_t *info);
-void ztparse(void *yyp, int yymajor, ztlexinf_t *yyminor);
-void ztparseFree(void *p, void (*freeProc)(void *));
+#include "zt-driver.h"
+#include "zt-lex.h"
+
 void ztparseTrace(FILE *TraceFILE, char *zTracePrompt);
+void ztparseInit(void *yypRawParser, ztparseinfo_t *info);
+void *ztparseAlloc(void *(*mallocProc)(size_t), ztparseinfo_t *info);
+void ztparseFinalize(void *p);
+void ztparseFree(void *p, void (*freeProc)(void *));
+void ztparse(void *yyp, int yymajor, ztlexinf_t *yyminor);
+int ztparseFallback(int iToken);
 
 #endif /* ZT_GRAMX_H */
 

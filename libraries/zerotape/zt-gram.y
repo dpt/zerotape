@@ -35,8 +35,10 @@
 
 #include "fortify/fortify.h"
 
-#include "zt-ast.h"
+#include "zerotape/zerotape.h"
+
 #include "zt-driver.h"
+#include "zt-gramx.h"
 #include "zt-lex.h"
 }
 

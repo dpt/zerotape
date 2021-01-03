@@ -27,13 +27,13 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   if (rc)
     return rc;
 #endif /* ZT_DEBUG */
-  
+
   ztast_destroy(ast);
 
   return rc;
 }
 
-int main(int argc, const char *argv[])
+int main(void)
 {
   ztresult_t rc;
 
