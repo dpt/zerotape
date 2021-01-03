@@ -1,0 +1,202 @@
+# zerotape
+
+# Tools
+
+asm_			= objasm
+cc_			= cc
+cdir			= cdir
+every_			= every.every2
+libfile_		= libfile
+link_			= link
+wipe			= $(suppress) wipe
+suppress		= x
+
+# Tool flags:
+
+asmflags		= $(depend) $(throwback)
+ccflags			= -c90 -fah -Wh -Otime -c $(cpu) $(depend) $(throwback) $(includes) $(ccextra)
+everyflags     	 	= -c
+libfileflags		= -c
+linkflags		= -c++
+wipeflags		= ~CFR~V
+
+# Combined tools and flags
+
+asm			= $(asm_) $(asmflags)
+cc			= $(cc_) $(ccflags)
+every			= $(every_) $(everyflags)
+libfile			= $(libfile_) $(libfileflags)
+link			= $(link_) $(linkflags)
+
+# Tool flags (specific cases)
+
+defines			= -DZT_DEBUG
+
+# Compiler options
+
+cpu			= -apcs 3/32bit/fpe2/swstackcheck/fp/nofpregargs -arch 2 -cpu XScale
+depend			= -depend !Depend
+throwback		= -throwback
+
+# Library references
+
+includes		= -I^.^.include
+
+lib_normal		= CLibs:appengine.o.AOFLib
+lib_debug		= CLibs:appengine.odf.AOFLib
+lib_fortify       	= CLibs:fortify.o.libfortify
+lib_all			= OSLib:o.OSLib32 StubsG_C:o.flexlib StubsG_C:o.StubsGS
+
+libraries_normal	= $(lib_normal) $(lib_all)
+libraries_debug_fortify	= $(lib_debug) $(lib_fortify) $(lib_all)
+
+# Generated files
+
+objs_lemon = ^.^.libraries.lemon.o.lemon
+
+objs_zerotape = ^.^.libraries.zerotape.o.zt-ast \
+                ^.^.libraries.zerotape.o.zt-ast-viz \
+                ^.^.libraries.zerotape.o.zt-driver \
+                ^.^.libraries.zerotape.o.zt-gram \
+                ^.^.libraries.zerotape.o.zt-lex \
+                ^.^.libraries.zerotape.o.zt-lex-test \
+                ^.^.libraries.zerotape.o.zt-load \
+                ^.^.libraries.zerotape.o.zt-run \
+                ^.^.libraries.zerotape.o.zt-save \
+                ^.^.libraries.zerotape.o.zt-slab-alloc \
+                ^.^.libraries.zerotape.o.zt-walk
+
+objs_zerotapetests = ^.^.apps.zerotape-tests.o.tests
+
+objs_zerotapedemo = ^.^.apps.zerotape-demo.o.demo
+
+# Targets
+
+all: zerotape-tests zerotape-demo
+
+lemon:	StubsG_C:o.StubsGS $(objs_lemon)
+	$(link) -o $@ StubsG_C:o.StubsGS $(objs_lemon)
+
+o.zerotape: $(objs_zerotape) parser
+	CDir o
+	$(libfile) -o o.zerotape $(objs_zerotape)
+
+zerotape-tests: $(objs_zerotapetests) o.zerotape
+	$(link) -o $@ StubsG_C:o.StubsGS o.zerotape $(objs_zerotapetests)
+
+zerotape-demo: $(objs_zerotapedemo) o.zerotape
+	$(link) -o $@ StubsG_C:o.StubsGS o.zerotape $(objs_zerotapedemo)
+
+.PHONY: parser
+parser: lemon
+	CDir ^.^.libraries.zerotape.out
+	lemon -s -d^.^.libraries.zerotape -T^.^.libraries.lemon.c.lempar ^.^.libraries.zerotape.y.zt-gram 
+
+# Rule Patterns
+
+.SUFFIXES:
+.SUFFIXES:		.s .o .c .odf .y
+
+.s.o:;			$(asm) -from $< -to $@
+.c.o:;			$(cc) -ff $(defines) -o $@ $<
+# -DNDEBUG removed for now
+
+.s.odf:;		$(asm) -from $< -to $@ -g
+.c.odf:;		$(cc) -fn -g -DFORTIFY $(defines) -o $@ $<
+
+.y.c:;			lemon -d^.^.libraries.zerotape -q -s -T^.^.libraries.lemon.c.lempar $<
+
+# Dynamic dependencies:
+^.^.libraries.lemon.o.lemon:	^.^.libraries.lemon.c.lemon
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.c.zt-load
+^.^.libraries.zerotape.o.zt-load:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-load:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-run
+^.^.libraries.zerotape.o.zt-load:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-load:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.c.zt-run
+^.^.libraries.zerotape.o.zt-run:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-run:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-run
+^.^.libraries.zerotape.o.zt-run:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-run:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-save:	^.^.libraries.zerotape.c.zt-save
+^.^.libraries.zerotape.o.zt-save:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-save:	^.^.libraries.zerotape.h.zt-walk
+^.^.libraries.zerotape.o.zt-save:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-slab-alloc:	^.^.libraries.zerotape.c.zt-slab-alloc
+^.^.libraries.zerotape.o.zt-slab-alloc:	^.^.libraries.zerotape.h.zt-slab-alloc
+^.^.libraries.zerotape.o.zt-walk:	^.^.libraries.zerotape.c.zt-walk
+^.^.libraries.zerotape.o.zt-walk:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-walk:	^.^.libraries.zerotape.h.zt-walk
+^.^.libraries.zerotape.o.zt-walk:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-lex:	^.^.libraries.zerotape.c.zt-lex
+^.^.libraries.zerotape.o.zt-lex:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-lex:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-lex:	^.^.libraries.zerotape.h.zt-gram
+^.^.libraries.zerotape.o.zt-lex:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-lex:	^.^.libraries.zerotape.h.zt-lex-impl
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.libraries.zerotape.c.zt-lex-test
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.libraries.zerotape.h.zt-gram
+^.^.libraries.zerotape.o.zt-lex-test:	^.^.libraries.zerotape.h.zt-lex-impl
+^.^.libraries.zerotape.o.zt-ast:	^.^.libraries.zerotape.c.zt-ast
+^.^.libraries.zerotape.o.zt-ast:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-ast:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-ast:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-ast:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-ast-viz:	^.^.libraries.zerotape.c.zt-ast-viz
+^.^.libraries.zerotape.o.zt-ast-viz:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-ast-viz:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-ast-viz:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-ast-viz:	^.^.include.zerotape.h.zerotape
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.c.tests
+^.^.apps.zerotape-tests.o.tests:	^.^.include.fortify.h.fortify
+^.^.apps.zerotape-tests.o.tests:	^.^.include.fortify.h.ufortify
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-ast
+^.^.apps.zerotape-tests.o.tests:	^.^.include.zerotape.h.zerotape
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-driver
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-lex
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-ast
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-lex-test
+^.^.apps.zerotape-tests.o.tests:	^.^.apps.zerotape-tests.^.^.libraries.zerotape.h.zt-lex
+^.^.apps.zerotape-demo.o.demo:	^.^.apps.zerotape-demo.c.demo
+^.^.apps.zerotape-demo.o.demo:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.c.zt-driver
+^.^.libraries.zerotape.o.zt-driver:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-driver:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-driver:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-slab-alloc
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-gram
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-gramx
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-lex-test
+^.^.libraries.zerotape.o.zt-driver:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.c.zt-gram
+^.^.libraries.zerotape.o.zt-gram:	^.^.include.fortify.h.fortify
+^.^.libraries.zerotape.o.zt-gram:	^.^.include.fortify.h.ufortify
+^.^.libraries.zerotape.o.zt-gram:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-ast
+^.^.libraries.zerotape.o.zt-gram:	^.^.include.zerotape.h.zerotape
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-gramx
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-driver
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-lex
+^.^.libraries.zerotape.o.zt-gram:	^.^.libraries.zerotape.h.zt-lex
