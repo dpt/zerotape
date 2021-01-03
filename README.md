@@ -21,7 +21,6 @@ zerotape files can be written by hand. The following is an example of one:
 
 field = 42;  // assign single field
 array = [ 42, 43 ];  // assign array
-sparsearray = [ 0: 42, 10: 43 ];  // assign elements within array
 upperfield = { field = 42; }  // scoped fields
 
 // Values can be decimal, $hex or 0xhex.
