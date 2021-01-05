@@ -31,20 +31,26 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define SEP "\\"
+#define DIRSEP "\\"
+#define DIRSEPC '\\'
 #define EXTSEP "."
+#define EXTSEPC '.'
 extern int access(const char *path, int mode);
 #ifdef __cplusplus
 }
 #endif
 #elif defined(__riscos)
-#define SEP "."
+#define DIRSEP "."
+#define DIRSEPC '.'
 #define EXTSEP "/"
+#define EXTSEPC '/'
 static int access(const char *path, int mode) { return 0; }
 #else
 #include <unistd.h>
-#define SEP "/"
+#define DIRSEP "/"
+#define DIRSEPC '/'
 #define EXTSEP "."
+#define EXTSEPC '.'
 #endif
 
 /* #define PRIVATE static */
@@ -3188,7 +3194,7 @@ PRIVATE char *file_makename(struct lemon *lemp, const char *suffix)
   int sz;
 
   if( outputDir ){
-    cp = strrchr(filename, '.'); // DPT
+    cp = strrchr(filename, DIRSEPC);
     if( cp ) filename = cp + 1;
   }
   sz = lemonStrlen(filename);
@@ -3201,21 +3207,19 @@ PRIVATE char *file_makename(struct lemon *lemp, const char *suffix)
     exit(1);
   }
   name[0] = 0;
-#ifdef __riscos
   if( outputDir ){
-    lemon_strcpy(name, outputDir);
-    lemon_strcat(name, SEP);
+    lemon_strcpy(name,outputDir);
+    lemon_strcat(name,DIRSEP);
   }
+#ifdef __riscos
+  // build x.foo
   lemon_strcat(name,suffix+1); // suffix starts with a dot
-  lemon_strcat(name,SEP);
+  lemon_strcat(name,DIRSEP);
   lemon_strcat(name,filename);
 #else
-  if( outputDir ){
-    lemon_strcpy(name, outputDir);
-    lemon_strcat(name, SEP);
-  }
+  // build foo.x
   lemon_strcat(name,filename);
-  cp = strrchr(name,'.');
+  cp = strrchr(name,EXTSEPC);
   if( cp ) *cp = 0;
   lemon_strcat(name,suffix);
 #endif
