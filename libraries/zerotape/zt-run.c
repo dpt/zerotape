@@ -103,7 +103,7 @@ static ztresult_t zt_mksyntax(char *errbuf, ztsyntaxerr_t e)
       if (value->type != ZTVAL_INTEGER)                                      \
         return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGER);                    \
       integer = value->data.integer;                                         \
-      if (integer < 0 || integer > MAX)                                      \
+      if (integer > MAX)                                                     \
         return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                     \
                                                                              \
       rawvalue = PVAL(structure, field->offset);                             \
@@ -122,7 +122,7 @@ static ztresult_t zt_mksyntax(char *errbuf, ztsyntaxerr_t e)
         rawarr = PVAL(structure, field->offset);                             \
         for (i = 0; i < inner->nused; i++) {                                 \
           unsigned int integer = inner->ints[i];                             \
-          if (integer < 0 || integer > MAX)                                  \
+          if (integer > MAX)                                                 \
             return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                 \
           rawarr[i] = integer;                                               \
         }                                                                    \
@@ -147,7 +147,7 @@ static ztresult_t zt_mksyntax(char *errbuf, ztsyntaxerr_t e)
       if (value->type != ZTVAL_INTEGER)                                      \
         return zt_mksyntax(errbuf, ztsyntx_NEED_INTEGER);                    \
       integer = value->data.integer;                                         \
-      if (integer < 0 || integer > MAX)                                      \
+      if (integer > MAX)                                                     \
         return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                     \
                                                                              \
       prawvalue = PVAL(structure, field->offset);                            \
@@ -169,7 +169,7 @@ static ztresult_t zt_mksyntax(char *errbuf, ztsyntaxerr_t e)
         rawarr = *prawarr;                                                   \
         for (i = 0; i < inner->nused; i++) {                                 \
           unsigned int integer = inner->ints[i];                             \
-          if (integer < 0 || integer > MAX)                                  \
+          if (integer > MAX)                                                 \
             return zt_mksyntax(errbuf, ztsyntx_VALUE_RANGE);                 \
           rawarr[i] = integer;                                               \
         }                                                                    \
