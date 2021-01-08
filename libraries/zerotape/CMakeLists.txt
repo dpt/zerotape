@@ -39,9 +39,9 @@ if (ZT_USE_HEX)
 endif()
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
+find_program(LEMON_EXE lemon PATHS ${CMAKE_BINARY_DIR}/host/libraries/lemon)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h
-                   COMMAND lemon -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
-                   DEPENDS lemon
+                   COMMAND ${LEMON_EXE} -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
                    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y)
 add_custom_target(ztparser ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h)
 

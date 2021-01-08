@@ -58,6 +58,5 @@ libraries/zerotape/zt-gram.h
 ztdemo
 zttest
 /lemon
-/build
-/buildxcode
-build*
+/build/
+/buildxcode/
