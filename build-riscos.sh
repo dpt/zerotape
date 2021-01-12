@@ -1,7 +1,9 @@
 #!/bin/bash -e
 #
-# Build zerotape for RISC OS
+# Build zerotape for RISC OS via GCCSDK
 #
+
+BUILDDIR=build-ro
 
 if ! command -v cmake &>/dev/null; then
 	echo "CMake could not be found"
@@ -16,10 +18,8 @@ else
 	PARALLEL="--parallel 5" # wild guess
 fi
 
-mkdir -p build/host
-cd build/host
-cmake $GENERATOR -DHOST_TOOLS_ONLY=YES ../..
-cmake --build . $PARALLEL
-cd ..
-cmake $GENERATOR -DTARGETS_ONLY=YES -DCMAKE_TOOLCHAIN_FILE=../cmake/riscos.cmake ..
+mkdir -p $BUILDDIR && cd $BUILDDIR
+echo "Configuring..."
+cmake $GENERATOR -DCMAKE_TOOLCHAIN_FILE=../cmake/riscos.cmake ..
+echo "Building..."
 cmake --build . $PARALLEL

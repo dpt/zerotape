@@ -3,6 +3,8 @@
 # Build zerotape natively
 #
 
+BUILDDIR=build
+
 if ! command -v cmake &>/dev/null; then
 	echo "CMake could not be found"
 	exit
@@ -16,10 +18,8 @@ else
 	PARALLEL="--parallel 5" # wild guess
 fi
 
-mkdir -p build/host
-cd build/host
-cmake $GENERATOR -DHOST_TOOLS_ONLY=YES ../..
-cmake --build . $PARALLEL
-cd ..
-cmake $GENERATOR -DTARGETS_ONLY=YES ..
+mkdir -p $BUILDDIR && cd $BUILDDIR
+echo "Configuring..."
+cmake $GENERATOR ..
+echo "Building..."
 cmake --build . $PARALLEL
