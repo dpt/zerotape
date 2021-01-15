@@ -39,7 +39,12 @@ if (ZT_USE_HEX)
 endif()
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
-find_program(LEMON_EXE lemon PATHS ${HOSTTOOLSDIR}/libraries/lemon)
+find_program(LEMON_EXE
+             lemon
+             PATHS ${HOSTTOOLSDIR}/libraries/lemon
+             PATH_SUFFIXES Debug Release RelWithDebInfo MinSizeRel
+             NO_DEFAULT_PATH
+             REQUIRED)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h
                    COMMAND ${LEMON_EXE} -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
                    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y)
