@@ -71,7 +71,7 @@ static ztresult_t savestack_push(save_stack_t      *stack,
     if (newallocated < InitialStackSize)
       newallocated = InitialStackSize;
 
-    newstack = realloc(stack->stack, newallocated * sizeof(*newstack)); // TODO: hoist to a memory manager
+    newstack = realloc(stack->stack, newallocated * sizeof(*newstack)); /* FIXME: hoist to a memory manager */
     if (newstack == NULL)
       return ztresult_OOM;
 

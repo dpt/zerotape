@@ -55,7 +55,7 @@ void ztslaballoc_destroy(ztslaballoc_t *sa)
   if (sa == NULL)
     return;
 
-  // TODO: Free any non-slab allocations
+  /* FIXME: Free any non-slab allocations */
 
   /* free all slabs */
   for (i = 0; i < sa->nslablistused; i++)

@@ -26,7 +26,10 @@ target_sources(zerotape PRIVATE zt-gram.c zt-gram.h)
 if(MSVC)
     target_compile_options(zerotape PRIVATE /W4 /WX)
 else()
-    target_compile_options(zerotape PRIVATE -Wall -Wextra -pedantic)
+    target_compile_options(zerotape PRIVATE
+        -Wall -Wextra -pedantic -Wno-unused-parameter)
+    set_source_files_properties(zt-gram.c PROPERTIES
+        COMPILE_OPTIONS "-Wno-unused-variable")
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Debug)
