@@ -2,8 +2,9 @@
 #
 # zerotape
 #
-# Copyright (c) David Thomas, 2020
+# Copyright (c) David Thomas, 2020-2021
 #
+# vim: sw=4 ts=8 et
 
 add_library(Fortify fortify.c)
 target_compile_definitions(Fortify PRIVATE FORTIFY)

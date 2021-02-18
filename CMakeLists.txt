@@ -4,6 +4,7 @@
 #
 # Copyright (c) David Thomas, 2020-2021
 #
+# vim: sw=4 ts=8 et
 
 cmake_minimum_required(VERSION 3.18)
 
@@ -11,7 +12,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel." FORCE)
 endif()
 
-project(zerotape VERSION 0.4.1 DESCRIPTION "Serialisation library" LANGUAGES C)
+project(zerotape VERSION 0.5.0 DESCRIPTION "Serialisation library" LANGUAGES C)
 
 # If a host tools build was requested, then build them alone
 if(HOST_TOOLS_ONLY)

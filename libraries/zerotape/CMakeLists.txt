@@ -4,14 +4,15 @@
 #
 # Copyright (c) David Thomas, 2020-2021
 #
+# vim: sw=4 ts=8 et
 
 add_library(zerotape)
 
 set_target_properties(zerotape PROPERTIES
-                      VERSION 0.4.1
-                      DESCRIPTION "Serialisation library"
-                      PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/include/zerotape/zerotape.h
-                      C_STANDARD 90)
+    VERSION 0.5.0
+    DESCRIPTION "Serialisation library"
+    PUBLIC_HEADER ${CMAKE_SOURCE_DIR}/include/zerotape/zerotape.h
+    C_STANDARD 90)
 
 target_include_directories(zerotape PUBLIC ${CMAKE_SOURCE_DIR}/include)
 target_include_directories(zerotape PRIVATE ${CMAKE_CURRENT_BINARY_DIR} ${CMAKE_CURRENT_SOURCE_DIR}) # generated sources need a specific include path setting
@@ -43,14 +44,14 @@ endif()
 
 set(LEMON_SRC ${CMAKE_SOURCE_DIR}/libraries/lemon)
 find_program(LEMON_EXE
-             lemon
-             PATHS ${HOSTTOOLSDIR}/libraries/lemon
-             PATH_SUFFIXES Debug Release RelWithDebInfo MinSizeRel
-             NO_DEFAULT_PATH
-             REQUIRED)
+    lemon
+    PATHS ${HOSTTOOLSDIR}/libraries/lemon
+    PATH_SUFFIXES Debug Release RelWithDebInfo MinSizeRel
+    NO_DEFAULT_PATH
+    REQUIRED)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h
-                   COMMAND ${LEMON_EXE} -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
-                   MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y)
+    COMMAND ${LEMON_EXE} -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
+    MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y)
 add_custom_target(ztparser ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h)
 
 add_dependencies(zerotape ztparser)
@@ -61,5 +62,5 @@ if(USE_FORTIFY)
 endif()
 
 install(TARGETS zerotape
-        LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
-        PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+    LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
