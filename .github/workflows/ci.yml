@@ -9,6 +9,7 @@ jobs:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
+      fail-fast: false
       matrix:
         config:
           - { name: "Ubuntu build",  os: "ubuntu-latest",  install: "sudo apt-get install cmake ninja-build" }
