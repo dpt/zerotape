@@ -43,11 +43,16 @@ execute_process(COMMAND ${CMAKE_COMMAND} -E make_directory "${HOSTTOOLSDIR}")
 #
 # We use -DCMAKE_C_COMPILER to force the use of the system compiler, otherwise
 # the child build may inherit a cross-compiler via the CC environment variable.
-# This is bound to break on Windows.
+# This is bound to be fragile...
+if(CMAKE_HOST_SYSTEM_NAME STREQUAL Windows)
+    set(HOST_CC cl)
+else()
+    set(HOST_CC cc)
+endif()
 execute_process(COMMAND ${CMAKE_COMMAND}
     -G "${CMAKE_GENERATOR}"
     -DCMAKE_BUILD_TYPE='Release'
-    -DCMAKE_C_COMPILER='cc'
+    -DCMAKE_C_COMPILER=${HOST_CC}
     -DCMAKE_MAKE_PROGRAM=${CMAKE_MAKE_PROGRAM}
     -DHOST_TOOLS_ONLY=1
     ${CMAKE_SOURCE_DIR}
