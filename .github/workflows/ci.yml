@@ -22,3 +22,4 @@ jobs:
           cd build
           cmake -GNinja ..
           cmake --build .
+          ./platform/generic/zerotape-tests
