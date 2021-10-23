@@ -12,15 +12,15 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: "Ubuntu build",  os: "ubuntu-latest",  install: "sudo apt-get install cmake ninja-build" }
-          - { name: "Windows build", os: "windows-latest", install: "choco install cmake ninja" }
-          - { name: "macOS build",   os: "macos-latest",   install: "brew install cmake ninja" }
+          - { name: "Ubuntu build",  os: "ubuntu-latest",  install: "sudo apt-get install cmake ninja-build", generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests"            }
+          - { name: "Windows build", os: "windows-latest", install: "choco install cmake",                    generator: "",         testexe: "platform\\generic\\Debug\\zerotape-tests.exe" }
+          - { name: "macOS build",   os: "macos-latest",   install: "brew install cmake ninja",               generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests"            }
     steps:
       - uses: actions/checkout@v2
       - run: ${{ matrix.config.install }}
       - run: |
           mkdir build
           cd build
-          cmake -GNinja ..
+          cmake ${{ matrix.config.generator }} ..
           cmake --build .
-          ./platform/generic/zerotape-tests
+          ${{ matrix.config.testexe }}
