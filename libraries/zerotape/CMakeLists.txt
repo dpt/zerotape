@@ -25,7 +25,7 @@ target_sources(zerotape PRIVATE zt-ast-viz.c zt-ast.c zt-ast.h zt-gramx.h zt-lex
 target_sources(zerotape PRIVATE zt-gram.c zt-gram.h)
 
 if(MSVC)
-    target_compile_options(zerotape PRIVATE /W4 /WX)
+    target_compile_options(zerotape PRIVATE /W3)  # Ideally would be /W4 /WX but that's painful
 else()
     target_compile_options(zerotape PRIVATE
         -Wall -Wextra -pedantic -Wno-unused-parameter)
@@ -49,8 +49,12 @@ find_program(LEMON_EXE
     PATH_SUFFIXES Debug Release RelWithDebInfo MinSizeRel
     NO_DEFAULT_PATH
     REQUIRED)
+# Convert CMake-style (Unixy) paths to native
+cmake_path(CONVERT "${CMAKE_CURRENT_BINARY_DIR}" TO_NATIVE_PATH_LIST LEMON_OUTPUT_DIR)
+cmake_path(CONVERT "${LEMON_SRC}/lempar.c" TO_NATIVE_PATH_LIST LEMON_DRIVER_TEMPLATE)
+cmake_path(CONVERT "${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y" TO_NATIVE_PATH_LIST LEMON_GRAMMAR)
 add_custom_command(OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h
-    COMMAND ${LEMON_EXE} -s -d${CMAKE_CURRENT_BINARY_DIR} -T${LEMON_SRC}/lempar.c ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y
+    COMMAND ${LEMON_EXE} -s -d${LEMON_OUTPUT_DIR} -T${LEMON_DRIVER_TEMPLATE} ${LEMON_GRAMMAR}
     MAIN_DEPENDENCY ${CMAKE_CURRENT_SOURCE_DIR}/zt-gram.y)
 add_custom_target(ztparser ALL DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.c ${CMAKE_CURRENT_BINARY_DIR}/zt-gram.h)
 
