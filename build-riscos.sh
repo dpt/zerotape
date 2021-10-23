@@ -1,25 +1,23 @@
-#!/bin/bash -e
+#!/bin/bash
 #
 # Build zerotape for RISC OS via GCCSDK
 #
 
-BUILDDIR=build-ro
+set -e
+set -o pipefail
 
-if ! command -v cmake &>/dev/null; then
-	echo "CMake could not be found"
-	exit
-fi
+wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | apt-key add -
+cmake --version || { apt-get update && \
+                     apt-get install -y software-properties-common && \
+                     apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main' && \
+                     apt-get install -y cmake ; }
 
-if command -v ninja &>/dev/null; then
-	GENERATOR="-G Ninja"
-	PARALLEL=
-else
-	GENERATOR=
-	PARALLEL="--parallel 5" # wild guess
-fi
+ninja --version || { apt-get update && \
+                     apt-get install -y ninja-build ; }
 
-mkdir -p $BUILDDIR && cd $BUILDDIR
-echo "Configuring..."
-cmake $GENERATOR -DCMAKE_TOOLCHAIN_FILE=../cmake/riscos.cmake ..
-echo "Building..."
-cmake --build . $PARALLEL
+source /home/riscos/gccsdk-params
+
+# zerotape
+mkdir -p build-ro && cd build-ro
+cmake -GNinja -DCMAKE_TOOLCHAIN_FILE=../cmake/riscos.cmake .. || bash -i
+cmake --build . || bash -i

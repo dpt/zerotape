@@ -24,3 +24,13 @@ jobs:
           cmake ${{ matrix.config.generator }} ..
           cmake --build .
           ${{ matrix.config.testexe }}
+  build-riscos:
+    container: riscosdotinfo/riscos-gccsdk-4.7:latest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cross compile zerotape
+        run: |
+          apt-get update
+          apt-get install -y ca-certificates
+          ./build-riscos.sh
