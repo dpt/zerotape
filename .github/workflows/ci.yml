@@ -12,9 +12,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - { name: "Ubuntu build",  os: "ubuntu-latest",  install: "sudo apt-get install cmake ninja-build", generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests"            }
-          - { name: "Windows build", os: "windows-latest", install: "choco install cmake",                    generator: "",         testexe: "platform\\generic\\Debug\\zerotape-tests.exe" }
-          - { name: "macOS build",   os: "macos-latest",   install: "brew install cmake ninja",               generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests"            }
+          - { name: "Ubuntu build",  os: "ubuntu-latest",  install: "sudo apt-get install cmake ninja-build", generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests ../test.zt"             }
+          - { name: "Windows build", os: "windows-latest", install: "choco install cmake",                    generator: "",         testexe: "platform\\generic\\Debug\\zerotape-tests.exe ..\\test.zt" }
+          - { name: "macOS build",   os: "macos-latest",   install: "brew install cmake ninja",               generator: "-G Ninja", testexe: "./platform/generic/zerotape-tests ../test.zt"             }
     steps:
       - uses: actions/checkout@v2
       - run: ${{ matrix.config.install }}
@@ -25,6 +25,7 @@ jobs:
           cmake --build .
           ${{ matrix.config.testexe }}
   build-riscos:
+    name: RISC OS build
     container: riscosdotinfo/riscos-gccsdk-4.7:latest
     runs-on: ubuntu-latest
     steps:

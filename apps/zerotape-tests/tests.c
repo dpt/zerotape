@@ -11,7 +11,8 @@
 static ztresult_t parse_and_dump_dot(const char *filename,
                                      const char *dotfilename)
 {
-  ztresult_t rc;
+  ztresult_t rc = ztresult_OK;
+  
   char       errbuf[ZTMAXERRBUF];
   ztast_t   *ast;
 
@@ -33,11 +34,11 @@ static ztresult_t parse_and_dump_dot(const char *filename,
   return rc;
 }
 
-int main(void)
+int main(int argc, char *argv[])
 {
-  ztresult_t rc;
+  ztresult_t rc = ztresult_OK;
 
-  Fortify_EnterScope();
+  (void) Fortify_EnterScope();
 
   ztlex_selftest();
 
@@ -45,7 +46,7 @@ int main(void)
   ztlex_stringtest(" ");
   ztlex_stringtest("x = 0;");
   ztlex_stringtest("y = [ 1 ];");
-  ztlex_stringtest("()*+,-/:;=[]{}");
+  ztlex_stringtest("()*+,-/;=[]{}"); /* no colon */
   ztlex_stringtest("1.23");
   ztlex_stringtest("$FF");
   ztlex_stringtest("0xFF");
@@ -55,20 +56,23 @@ int main(void)
   ztlex_stringtest("1nil2");
   ztlex_stringtest(" 1 nil 2 ");
 
-  rc = parse_and_dump_dot("test.zt", "ztast.dot");
-  if (rc)
+  if (argc > 1)
   {
-    fprintf(stderr, "parse_and_dump_dot() returned error %d\n", rc);
+    rc = parse_and_dump_dot(argv[1], "ztast.dot");
+    if (rc != ztresult_OK)
+      fprintf(stderr, "parse_and_dump_dot() returned error %x\n", rc);
+    else
+      printf("ztast.dot created\n");
   }
 
-  Fortify_LeaveScope();
+  (void) Fortify_LeaveScope();
 
 #ifdef FORTIFY
   printf("Fortify is enabled\n");
   Fortify_DumpAllMemory();
 #endif
 
-  return 0;
+  return (rc == ztresult_OK) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 
 /* vim: set ts=8 sts=2 sw=2 et: */
