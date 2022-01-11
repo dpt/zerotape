@@ -6,7 +6,7 @@ To use it, you take the C data structure that you want to preserve and write an 
 
 By default zerotape provides support for a basic set of integer types, but this can be supplemented with custom functions to handle more complex cases.
 
-The zerotape format is flexible. It’s a small language which supports a number of basic language features, including assignments, structures and basic expressions. It’s parsed using a language grammar which is fed through the [Lemon](https://www.sqlite.org/lemon.html) parser generator.
+The zerotape format is flexible. It’s a rudimentary language which supports a number of basic language features, including assignments, structures and basic expressions. It’s parsed using a language grammar which is fed through the [Lemon](https://www.sqlite.org/lemon.html) parser generator.
 
 Currently the language has some limitations:
 - It’s entirely integer focused (there are no string or floating point types supported)
@@ -19,16 +19,17 @@ zerotape files can be written by hand. The following is an example of one:
 ```
 // C++ style comments
 
-field = 42;  // assign single field
-array = [ 42, 43 ];  // assign array
-upperfield = { field = 42; }  // scoped fields
+field = 42;  // assign a single field
+array = [ 42, 43 ];  // assign an array
+outerfield = { innerfield = 42; };  // assign to scoped fields
 
 // Values can be decimal, $hex or 0xhex.
+field = 42;
 field = $deadbeef;
 field = 0xcafebabe;
 
 // Values can use the basic expressions: +, -, * and /.
-field = ($7f * 2);
+field = (($11 + 0x67) * 2);
 ```
 
 ## Future Ideas
