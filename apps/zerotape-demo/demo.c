@@ -142,7 +142,7 @@ static ztresult_t bandmember_saver(const void *pvoidval,
   const char **ppcharval = (const char **) pvoidval;
   int          i;
 
-  for (i = 0; i < NELEMS(popular_beat_combo); i++)
+  for (i = 0; i < (int) NELEMS(popular_beat_combo); i++)
     if (popular_beat_combo[i] == *ppcharval)
       break;
   if (i == NELEMS(popular_beat_combo))
@@ -181,7 +181,7 @@ static ztresult_t bandmember_loader(const ztast_expr_t *expr,
     return ztresult_SYNTAX_ERROR;
   }
   index = expr->data.value->data.integer;
-  if (index < 0 || index >= NELEMS(popular_beat_combo))
+  if ((unsigned) index >= NELEMS(popular_beat_combo))
   {
     strcpy(errbuf, "value out of range (custom)"); /* ztsyntx_VALUE_RANGE */
     return ztresult_SYNTAX_ERROR;
