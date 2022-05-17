@@ -1,6 +1,6 @@
 # zerotape
 
-![Build status](https://github.com/dpt/zerotape/actions/workflows/ci.yml/badge.svg)
+[![Build status](https://github.com/dpt/zerotape/actions/workflows/ci.yml/badge.svg)](https://github.com/dpt/zerotape/actions)
 
 zerotape is a C library for loading data structures from, and saving them to, a structured text format. It was built to handle the loading and saving of games in my [The Great Escape in C](https://github.com/dpt/The-Great-Escape-in-C) project.
 
